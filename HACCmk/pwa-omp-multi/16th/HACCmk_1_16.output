@@ -1,0 +1,9 @@
+count is set 327
+Total MPI ranks 1
+Number of OMP threads 16
+
+
+Kernel elapsed time, s:        13.76628785
+Total  elapsed time, s:        13.94928015
+Result validation: 6636045675.12190628
+Result expected  : 6636045675.12190628
