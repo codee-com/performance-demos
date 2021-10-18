@@ -64,13 +64,14 @@ printf "serial done"
 PI_OMP_MULTI=$(make run -C PI/pwa-omp-multi | grep "time (s)=" | cut -b 11-)
 printf ", multi-threaded done.\n"
 
-printf "\nCode           \tSerial \tMulti  \tSpeedup \n"
-printf "===============\t=======\t=======\t========\n"
+printf "\nCode           \tSerial \tMulti  \tSpeedup\tTime reduced\n"
+printf "===============\t=======\t=======\t=======\t============\n"
 
 printRow() { # Params: Code, Serial, Multi
     local SPEEDUP=$(bc -l <<< "$2/$3")
+    local REDUCTION=$(bc -l <<< "($2-$3)/$2*100")
     local EXTRA_TAB="" && (( ${#1} < 8 )) && EXTRA_TAB="\t"
-    printf "%s\t$EXTRA_TAB%.2f\t%.2f\t%.2fx\n" $1 $2 $3 $SPEEDUP
+    printf "%s\t$EXTRA_TAB%.2f\t%.2f\t%.2fx\t%.2f%%\n" $1 $2 $3 $SPEEDUP $REDUCTION
 }
 
 printRow "ATMUX" $ATMUX_SERIAL $ATMUX_OMP_MULTI

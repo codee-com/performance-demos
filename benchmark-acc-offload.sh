@@ -46,13 +46,14 @@ printf "serial done"
 PI_ACC_OFFLOAD=$(make run -C PI/pwa-acc-offload | grep "time (s)=" | cut -b 11-)
 printf ", offloaded done.\n"
 
-printf "\nCode           \tSerial \tOffload\tSpeedup \n"
-printf "===============\t=======\t=======\t========\n"
+printf "\nCode           \tSerial \tOffload\tSpeedup\tTime reduced\n"
+printf "===============\t=======\t=======\t=======\t============\n"
 
 printRow() { # Params: Code, Serial, Multi
     local SPEEDUP=$(bc -l <<< "$2/$3")
     local EXTRA_TAB="" && (( ${#1} < 8 )) && EXTRA_TAB="\t"
-    printf "%s\t$EXTRA_TAB%.2f\t%.2f\t%.2fx\n" $1 $2 $3 $SPEEDUP
+    local REDUCTION=$(bc -l <<< "($2-$3)/$2*100")
+    printf "%s\t$EXTRA_TAB%.2f\t%.2f\t%.2fx\t%.2f%%\n" $1 $2 $3 $SPEEDUP $REDUCTION
 }
 
 printRow "COULOMB" $COULOMB_SERIAL $COULOMB_ACC_OFFLOAD
