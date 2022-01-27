@@ -8,6 +8,7 @@ Just follow this simple steps on your computer:
 - First, clone this repository as usual.
 - Second, run the `benchmark-omp-multi.sh` script to measure performance gain using OpenMP multi-threading on your CPU.
 - Third, take a look at the output, which should look as follows:
+
 ...
 Code            Serial  Multi   Speedup Time reduced
 =============== ======= ======= ======= ============
