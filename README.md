@@ -9,7 +9,6 @@ Just follow this simple steps on your computer:
 - Second, run the `benchmark-omp-multi.sh` script to measure performance gain using OpenMP multi-threading on your CPU.
 - Third, take a look at the output, which should look as follows:
 
-...
 Code            Serial  Multi   Speedup Time reduced
 =============== ======= ======= ======= ============
 ATMUX           0.30    0.12    2.48x   59.68%
@@ -19,7 +18,7 @@ HACCmk          38.17   12.42   3.07x   67.45%
 MATMUL          5.49    1.04    5.28x   81.07%
 NPB_CG          34.99   10.21   3.43x   70.82%
 PI              3.33    0.46    7.30x   86.30%
-```
+
 
 Note that your computer must meet the following technical requirements: 
 - Compilers: `gcc` or `clang` to build OpenMP multi-threading versions.
