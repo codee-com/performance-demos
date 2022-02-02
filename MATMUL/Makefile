@@ -12,7 +12,7 @@ PWA_OMP_MULTI_FILE := main-pwa-omp-multi.c
 PWA_OMP_ACC_OFFLOAD_FILE := main-pwa-acc-offload.c
 
 parallelize: clean-parallelize
-	pwdirectives serial/main.c:matmul:15:5 -o $(PWA_OMP_MULTI_FILE) -- -I serial/include
+	pwdirectives --omp multi serial/main.c:matmul:15:5 -o $(PWA_OMP_MULTI_FILE) -- -I serial/include
 	pwdirectives --acc serial/main.c:matmul:15:5 -o $(PWA_OMP_ACC_OFFLOAD_FILE) -- -I serial/include
 
 clean-parallelize:

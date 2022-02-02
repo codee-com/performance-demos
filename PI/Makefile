@@ -12,7 +12,7 @@ PWA_OMP_MULTI_FILE := pi-pwa-omp-multi.c
 PWA_OMP_ACC_OFFLOAD_FILE := pi-pwa-acc-offload.c
 
 parallelize: clean-parallelize
-	pwdirectives serial/pi.c:main:31:5 -o $(PWA_OMP_MULTI_FILE)
+	pwdirectives --omp multi serial/pi.c:main:31:5 -o $(PWA_OMP_MULTI_FILE)
 	pwdirectives --acc serial/pi.c:main:31:5 -o $(PWA_OMP_ACC_OFFLOAD_FILE)
 
 clean-parallelize:
