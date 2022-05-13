@@ -21,3 +21,6 @@ $(PROGRAM): $(DEPS)
 clean:
 	rm -f *.o $(PROGRAM)
 
+run: native
+
+build: $(PROGRAM)
