@@ -26,7 +26,7 @@ void Step10_orig( int count1, float xxi, float yyi, float zzi, float fsrrmax2, f
        
         m = ( r2 < fsrrmax2 ) ? mass1[j] : 0.0f;
 
-        f =  pow( r2 + mp_rsm2, -1.5 ) - ( ma0 + r2*(ma1 + r2*(ma2 + r2*(ma3 + r2*(ma4 + r2*ma5)))));
+        f =  pow( r2 + mp_rsm2, -1.5f ) - ( ma0 + r2*(ma1 + r2*(ma2 + r2*(ma3 + r2*(ma4 + r2*ma5)))));
         
         f = ( r2 > 0.0f ) ? m * f : 0.0f;
 
