@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
     double out_result;
 
     double sum = 0.0;
-    for (int i = 0; i < N; i++) {
+    for (unsigned long i = 0; i < N; i++) {
         double x = (i + 0.5) / N;
         sum += sqrt(1 - x * x);
     }

@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
     #pragma acc parallel
     {
     #pragma acc loop reduction(+: sum)
-    for (int i = 0; i < N; i++) {
+    for (unsigned long i = 0; i < N; i++) {
         double x = (i + 0.5) / N;
         sum += sqrt(1 - x * x);
     }
