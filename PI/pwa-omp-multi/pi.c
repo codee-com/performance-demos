@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
     #pragma omp parallel default(none) shared(N, sum)
     {
     #pragma omp for reduction(+: sum) schedule(auto)
-    for (int i = 0; i < N; i++) {
+    for (unsigned long i = 0; i < N; i++) {
         double x = (i + 0.5) / N;
         sum += sqrt(1 - x * x);
     }
