@@ -28,6 +28,11 @@ fi
 nvc --version
 printf "\n"
 
+printf "Cleaning ... \n"
+make clean -C COULOMB
+make clean -C MATMUL
+make clean -C PI
+
 printf "Executing 1/3: COULOMB... "
 COULOMB_SERIAL=$(make run -C COULOMB/serial | grep "time (s)=" | cut -b 11-)
 printf "serial done"
@@ -45,6 +50,11 @@ PI_SERIAL=$(make run -C PI/serial | grep "time (s)=" | cut -b 11-)
 printf "serial done"
 PI_ACC_OFFLOAD=$(make run -C PI/pwa-acc-offload | grep "time (s)=" | cut -b 11-)
 printf ", offloaded done.\n"
+
+printf "Cleaning ... \n"
+make clean -C COULOMB
+make clean -C MATMUL
+make clean -C PI
 
 printf "\nCode           \tSerial \tOffload\tSpeedup\tTime reduced\n"
 printf "===============\t=======\t=======\t=======\t============\n"

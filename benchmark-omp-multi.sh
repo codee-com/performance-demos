@@ -22,6 +22,16 @@ fi
 ${CC:-cc} --version
 printf "\n"
 
+
+printf "Cleaning ... \n"
+make clean -C ATMUX
+make clean -C CANNY
+make clean -C COULOMB
+make clean -C HACCmk
+make clean -C MATMUL
+make clean -C NPB_CG
+make clean -C PI
+
 printf "Executing 1/7: ATMUX... "
 ATMUX_SERIAL=$(make run -C ATMUX/serial | grep "time (s)=" | cut -b 11-)
 printf "serial done"
@@ -63,6 +73,16 @@ PI_SERIAL=$(make run -C PI/serial | grep "time (s)=" | cut -b 11-)
 printf "serial done"
 PI_OMP_MULTI=$(make run -C PI/pwa-omp-multi | grep "time (s)=" | cut -b 11-)
 printf ", multi-threaded done.\n"
+
+
+printf "Cleaning ... \n"
+make clean -C ATMUX
+make clean -C CANNY
+make clean -C COULOMB
+make clean -C HACCmk
+make clean -C MATMUL
+make clean -C NPB_CG
+make clean -C PI
 
 printf "\nCode           \tSerial \tMulti  \tSpeedup\tTime reduced\n"
 printf "===============\t=======\t=======\t=======\t============\n"

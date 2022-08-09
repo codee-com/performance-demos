@@ -5,6 +5,7 @@ default: run
 
 clean:
 	rm -fr $(TARGET)
+	rm -f common/*.o CG/*.o
 
 build: clean
 	mkdir -p $(TARGET)
