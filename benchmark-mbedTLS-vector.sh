@@ -192,9 +192,4 @@ printf "vectorized done\n"
 
 #===============================================================================
 
-printf "\nCleaning the build . . .\n"
-
-git restore library/
-rm -rf build buildVec
-
 printf "\nDone.\n"
