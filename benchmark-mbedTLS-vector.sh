@@ -5,6 +5,16 @@ for cmd in git cmake ninja printf pwreport pwdirectives; do
     command -v $cmd >/dev/null 2>&1 || { printf >&2 "$cmd is required but it's not installed. Aborting."; exit 1; }
 done
 
+# Check current directory
+if git rev-parse --git-dir > /dev/null 2>&1; then
+  : # This is a valid git repository
+else
+  : # this is not a git repository
+  printf "Invalid git directory.\n"
+  printf "Please, clone directly the repository from https://github.com/teamappentra/performance-demos.git \n"
+  exit;
+fi
+
 # Print CPU information if the command is available
 if command -v lscpu >/dev/null 2>&1; then
     lscpu
