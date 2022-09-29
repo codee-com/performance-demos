@@ -79,7 +79,7 @@ printf "##################################################\n"
 read -p "Press enter to continue"
 printf "\n"
 
-pwreport --screening --level 2 --config build/compile_commands.json --show-progress --brief
+pwreport --screening --config build/compile_commands.json --show-progress --brief
 
 #===============================================================================
 printf "\nStep 2 done.\n"
@@ -90,7 +90,7 @@ printf "##################################################\n"
 read -p "Press enter to continue"
 printf "\n"
 
-pwreport --screening --level 3 --config build/compile_commands.json --show-progress --brief library/aes.c library/cmac.c
+pwreport --screening --level 2 --config build/compile_commands.json --show-progress --brief library/aes.c library/cmac.c
 
 #===============================================================================
 printf "\nStep 3 done.\n"
