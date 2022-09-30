@@ -17,7 +17,7 @@ Just follow these simple steps on your computer:
   * A valid Codee license and package is required. Please, [`contact us at codee.com`](https://www.codee.com/contact-us/).
 * Third, take a look at the information displayed in the screen, as the script invokes Codee to get an screening report of the project, uses Codee’s “auto” mode to annotate the source code with compiler pragmas and verifies the correctness and speedup of the auto-generate optimized code.
 
-The following output corresponds to an execution on a laptop running Ubuntu 21.04 and equipped with an AMD Ryzen 4800H CPU and 16 GBs of RAM:
+The following output corresponds to an execution on a laptop running Ubuntu 21.04 and equipped with an AMD Ryzen 4800H CPU and 16 GBs of RAM, using gcc 10.3:
 
 ```
 $ ./benchmark-mbedTLS-vector.sh
@@ -25,27 +25,50 @@ $ ./benchmark-mbedTLS-vector.sh
 ```
 ...
 ##################################################
-7/7. Verifying the speedup of the vectorized version ...
+4/5. Verifying the correctness ...
 ##################################################
 Press enter to continue
 
+aes_xts original algorithm
+PASSED (47 / 47 tests (0 skipped))
 
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-aes_xts algorithm
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+cmac original algorithm
+PASSED (19 / 19 tests (0 skipped))
 
-  AES-XTS-128              :     634280 KiB/s,          4 cycles/byte
-  AES-XTS-256              :     548513 KiB/s,          5 cycles/byte
+aes_xts vectorized algorithm
+PASSED (47 / 47 tests (0 skipped))
 
+cmac vectorized algorithm
+PASSED (19 / 19 tests (0 skipped))
+
+Step 4 done.
+=============================================================
+
+##################################################
+5/5. Verifying the speedup ...
+##################################################
+
+Press enter to continue
 original done
-************************************************************
-
-  AES-XTS-128              :     782770 KiB/s,          3 cycles/byte
-  AES-XTS-256              :     657988 KiB/s,          4 cycles/byte
-
 vectorized done
 
-...
+Step                   	Without Codee		With Codee
+=====================	=============		==========
+CI: SS: Clone        	29.641 s 		29.641 s
+CI: BS: pwdirectives 	----- s 		0.196 s
+CI: BS: make all     	8.892 s 		8.922 s
+CI: BS: Test aes/cmac	0.007 s 		0.006 s
+CI: DS: Benchmark    	6.015 s 		6.012 s
+
+Algorithm       	Original 	Vectorized 	Speedup
+================	========	==========	=======
+AES-XTS-128 	    564781		777016		37.58%
+AES-XTS-256         529037		653561		23.54%
+AES-CMAC-128		684210		910813		33.12%
+AES-CMAC-192		633934		819417		29.26%
+AES-CMAC-256		588439		753144		27.99%
+AES-CMAC-PRF-128	681805		805037		18.07%
+
 
 ```
 

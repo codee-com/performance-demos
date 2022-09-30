@@ -67,7 +67,6 @@ tBuild0=$(date +%s%3N)
 
 rm -rf build
 cmake \
--DENABLE_TESTING=On \
 -DUSE_SHARED_MBEDTLS_LIBRARY=On \
 -DCMAKE_BUILD_TYPE=Release \
 -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
@@ -118,7 +117,6 @@ printf "\n"
 tBuild4=$(date +%s%3N)
 
 cmake \
--DENABLE_TESTING=On \
 -DUSE_SHARED_MBEDTLS_LIBRARY=On \
 -DCMAKE_BUILD_TYPE=Release \
 -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
@@ -145,15 +143,11 @@ tBuild6=$(date +%s%3N)
 
 cd "build/tests/"
 
-printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-printf "aes_xts algorithm\n"
-printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-./test_suite_aes.xts
+printf "\naes_xts original algorithm\n"
+./test_suite_aes.xts | grep 'PASSED'
 
-printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-printf "cmac algorithm\n"
-printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-./test_suite_cmac
+printf "\ncmac original algorithm\n"
+./test_suite_cmac | grep 'PASSED'
 
 cd ../..
 
@@ -161,15 +155,11 @@ tBuild7=$(date +%s%3N)
 
 cd "buildVec/tests/"
 
-printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-printf "aes_xts algorithm\n"
-printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-./test_suite_aes.xts
+printf "\naes_xts vectorized algorithm\n"
+./test_suite_aes.xts | grep 'PASSED'
 
-printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-printf "cmac algorithm\n"
-printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-./test_suite_cmac
+printf "\ncmac vectorized algorithm\n"
+./test_suite_cmac | grep 'PASSED'
 
 cd ../..
 tBuild8=$(date +%s%3N)
@@ -185,25 +175,16 @@ read -p "Press enter to continue"
 printf "\n"
 
 tDeploy0=$(date +%s%3N)
-printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-printf "aes_xts algorithm\n"
-printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-build/programs/test/benchmark aes_xts
-printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-printf "cmac algorithm\n"
-printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-build/programs/test/benchmark aes_cmac
+
+aes_xts_ORIGINAL=$(build/programs/test/benchmark aes_xts)
+aes_cmac_ORIGINAL=$(build/programs/test/benchmark aes_cmac)
 printf "original done\n"
 
 tDeploy1=$(date +%s%3N)
-printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-printf "aes_xts algorithm\n"
-printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-buildVec/programs/test/benchmark aes_xts
-printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-printf "cmac algorithm\n"
-printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-buildVec/programs/test/benchmark aes_cmac
+
+aes_xts_VECTORIZED=$(buildVec/programs/test/benchmark aes_xts)
+
+aes_cmac_VECTORIZED=$(buildVec/programs/test/benchmark aes_cmac)
 printf "vectorized done\n"
 tDeploy2=$(date +%s%3N)
 #===============================================================================
@@ -217,10 +198,48 @@ tTestC=$(bc -l <<< "($tBuild8 - $tBuild7) /1000")
 tDeployO=$(bc -l <<< "($tDeploy1 - $tDeploy0) /1000")
 tDeployC=$(bc -l <<< "($tDeploy2 - $tDeploy1) /1000")
 
-printf "\nStep               \tWithout Codee\tWith Codee\n"
-printf "=====================\t=============\t==========\n"
-printf "CI: SS: Clone        \t%.3f s\t\t%.3f s\n" $tSource $tSource
-printf "CI: BS: pwdirectives \t--- s\t\t%.3f s\n" $tCodee
-printf "CI: BS: make all     \t%.3f s\t\t%.3f s\n" $tBuildO $tBuildC
-printf "CI: BS: Test aes/cmac\t%.3f s\t\t%.3f s\n" $tTestO $tTestC
-printf "CI: DS: Benchmark    \t%.3f s\t\t%.3f s\n" $tDeployO $tDeployC
+
+printf "\nStep               \tWithout Codee\t\tWith Codee\n"
+printf "=====================\t=============\t\t==========\n"
+printf "CI: SS: Clone        \t%.3f s \t\t%.3f s\n" $tSource $tSource
+printf "CI: BS: pwdirectives \t----- s \t\t%.3f s\n" $tCodee
+printf "CI: BS: make all     \t%.3f s \t\t%.3f s\n" $tBuildO $tBuildC
+printf "CI: BS: Test aes/cmac\t%.3f s \t\t%.3f s\n" $tTestO $tTestC
+printf "CI: DS: Benchmark    \t%.3f s \t\t%.3f s\n" $tDeployO $tDeployC
+
+#===============================================================================
+
+aes_xts_128_ORIGINAL=$(echo "$aes_xts_ORIGINAL" | grep 'AES-XTS-128' | tr -s ' ' | cut -d ' ' -f 4)
+aes_xts_128_VECTORIZED=$(echo "$aes_xts_VECTORIZED" | grep 'AES-XTS-128' | tr -s ' ' | cut -d ' ' -f 4)
+
+aes_xts_256_ORIGINAL=$(echo "$aes_xts_ORIGINAL" | grep 'AES-XTS-256' | tr -s ' ' | cut -d ' ' -f 4)
+aes_xts_256_VECTORIZED=$(echo "$aes_xts_VECTORIZED" | grep 'AES-XTS-256' | tr -s ' ' | cut -d ' ' -f 4)
+
+
+aes_cmac_128_ORIGINAL=$(echo "$aes_cmac_ORIGINAL" | grep 'AES-CMAC-128' | tr -s ' ' | cut -d ' ' -f 4)
+aes_cmac_128_VECTORIZED=$(echo "$aes_cmac_VECTORIZED" | grep 'AES-CMAC-128' | tr -s ' ' | cut -d ' ' -f 4)
+
+aes_cmac_192_ORIGINAL=$(echo "$aes_cmac_ORIGINAL" | grep 'AES-CMAC-192' | tr -s ' ' | cut -d ' ' -f 4)
+aes_cmac_192_VECTORIZED=$(echo "$aes_cmac_VECTORIZED" | grep 'AES-CMAC-192' | tr -s ' ' | cut -d ' ' -f 4)
+
+aes_cmac_256_ORIGINAL=$(echo "$aes_cmac_ORIGINAL" | grep 'AES-CMAC-256' | tr -s ' ' | cut -d ' ' -f 4)
+aes_cmac_256_VECTORIZED=$(echo "$aes_cmac_VECTORIZED" | grep 'AES-CMAC-256' | tr -s ' ' | cut -d ' ' -f 4)
+
+aes_cmac_PRF_128_ORIGINAL=$(echo "$aes_cmac_ORIGINAL" | grep 'AES-CMAC-PRF-128' | tr -s ' ' | cut -d ' ' -f 4)
+aes_cmac_PRF_128_VECTORIZED=$(echo "$aes_cmac_VECTORIZED" | grep 'AES-CMAC-PRF-128' | tr -s ' ' | cut -d ' ' -f 4)
+
+printRow() { # Params: Code, Serial, Multi
+    local SPEEDUP=$(bc -l <<< "(($3-$2)/$2)*100")
+    local EXTRA_TAB="" && (( ${#1} < 16 )) && EXTRA_TAB="\t"
+    LC_NUMERIC="en_US.UTF-8" printf "%s\t$EXTRA_TAB%s\t\t%s\t\t%.2f%%\n" $1 $2 $3 $SPEEDUP
+}
+
+printf "\nAlgorithm       \tOriginal \tVectorized \tSpeedup\n"
+printf "================\t========\t==========\t=======\n"
+
+printRow "AES-XTS-128" $aes_xts_128_ORIGINAL $aes_xts_128_VECTORIZED
+printRow "AES-XTS-256" $aes_xts_256_ORIGINAL $aes_xts_256_VECTORIZED
+printRow "AES-CMAC-128" $aes_cmac_128_ORIGINAL $aes_cmac_128_VECTORIZED
+printRow "AES-CMAC-192" $aes_cmac_192_ORIGINAL $aes_cmac_192_VECTORIZED
+printRow "AES-CMAC-256" $aes_cmac_256_ORIGINAL $aes_cmac_256_VECTORIZED
+printRow "AES-CMAC-PRF-128" $aes_cmac_PRF_128_ORIGINAL $aes_cmac_PRF_128_VECTORIZED
