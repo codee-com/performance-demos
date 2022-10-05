@@ -46,7 +46,7 @@ cd "MbedTLS/v3.1.0/"
 
 printf "\nPre-cleaning the build . . .\n"
 
-git restore library/
+git checkout -- library/
 rm -rf build buildVec
 
 printf "\nDone.\n"
@@ -58,17 +58,20 @@ printf "1/7. Generating Compile_commands.json and building the neccesary files f
 printf "##################################################\n"
 
 rm -rf build
-cmake \
--DENABLE_TESTING=On \
--DUSE_SHARED_MBEDTLS_LIBRARY=On \
--DCMAKE_BUILD_TYPE=Release \
--DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
--DMBEDTLS_FATAL_WARNINGS=Off \
--Bbuild \
-./ \
--G Ninja
+mkdir build
+(
+  cd build
+  cmake \
+  -DENABLE_TESTING=On \
+  -DUSE_SHARED_MBEDTLS_LIBRARY=On \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  -DMBEDTLS_FATAL_WARNINGS=Off \
+  -S ../ \
+  -G Ninja
 
-cmake --build build
+  ninja
+)
 
 #===============================================================================
 printf "\nStep 1 done.\n"
@@ -137,19 +140,21 @@ read -p "Press enter to continue"
 printf "\n"
 
 rm -rf buildVec
+mkdir buildVec
+(
+  cd buildVec
+  cmake \
+  -DENABLE_TESTING=On \
+  -DUSE_SHARED_MBEDTLS_LIBRARY=On \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  -DCMAKE_C_FLAGS="-fopenmp-simd" \
+  -DMBEDTLS_FATAL_WARNINGS=Off \
+  -S ../ \
+  -G Ninja
 
-cmake \
--DENABLE_TESTING=On \
--DUSE_SHARED_MBEDTLS_LIBRARY=On \
--DCMAKE_BUILD_TYPE=Release \
--DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
--DCMAKE_C_FLAGS="-fopenmp-simd" \
--DMBEDTLS_FATAL_WARNINGS=Off \
--BbuildVec \
-./ \
--G Ninja
-
-cmake --build buildVec
+  ninja
+)
 
 #===============================================================================
 printf "\nStep 5 done.\n"
