@@ -67,7 +67,7 @@ mkdir build
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -DMBEDTLS_FATAL_WARNINGS=Off \
-  -S ../ \
+  -H. ../ \
   -G Ninja
 
   ninja
@@ -150,7 +150,7 @@ mkdir buildVec
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -DCMAKE_C_FLAGS="-fopenmp-simd" \
   -DMBEDTLS_FATAL_WARNINGS=Off \
-  -S ../ \
+  -H. ../ \
   -G Ninja
 
   ninja
