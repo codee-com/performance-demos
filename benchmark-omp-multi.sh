@@ -84,14 +84,14 @@ make clean -C MATMUL
 make clean -C NPB_CG
 make clean -C PI
 
-printf "\nCode           \tSerial \tMulti  \tSpeedup\tTime reduced\n"
-printf "===============\t=======\t=======\t=======\t============\n"
+printf "\nCode           \tOriginal \tOptimized  \tSpeedup\n"
+printf "===============\t========\t=========\t==============\n"
 
 printRow() { # Params: Code, Serial, Multi
     local SPEEDUP=$(bc -l <<< "$2/$3")
     local REDUCTION=$(bc -l <<< "($2-$3)/$2*100")
     local EXTRA_TAB="" && (( ${#1} < 8 )) && EXTRA_TAB="\t"
-    printf "%s\t$EXTRA_TAB%.2f\t%.2f\t%.2fx\t%.2f%%\n" $1 $2 $3 $SPEEDUP $REDUCTION
+    LC_NUMERIC="en_US.UTF-8" printf "%s\t$EXTRA_TAB%.2f\t$EXTRA_TAB%.2f\t$EXTRA_TAB%.2f%% (%.2fx)\n" $1 $2 $3 $REDUCTION $SPEEDUP
 }
 
 printRow "ATMUX" $ATMUX_SERIAL $ATMUX_OMP_MULTI

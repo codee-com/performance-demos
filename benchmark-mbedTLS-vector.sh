@@ -1,7 +1,15 @@
 #!/bin/bash -e
+export LC_NUMERIC="en_US.UTF-8"
+
+function printRunComm(){
+    ## Print the command    
+    echo "$@"
+    ## Run the command
+    $@
+}
 
 # Check that all required commands are available
-for cmd in git cmake ninja printf pwreport pwdirectives; do
+for cmd in git cmake ninja printf pwreport pwdirectives bc; do
     command -v $cmd >/dev/null 2>&1 || { printf >&2 "$cmd is required but it's not installed. Aborting."; exit 1; }
 done
 
@@ -29,24 +37,30 @@ printf "##################################################\n"
 printf "Wellcome to Codee's interactive demo with MBedTLS\n"
 printf "##################################################\n"
 printf "Seven steps:\n"
-printf "  1. Generate the compile_commads.json and build the neccesary files for the analysis\n"
+printf "  1. Build original MBbedTLS code\n"
 printf "  2. Codee's screening report for the whole suite\n"
-printf "  3. Codee's screening report for the most important algorightms\n"
-printf "  4. Vectorize the code with Codee's pwdirectives tool\n"
-printf "  5. Build the vectorized version\n"
-printf "  6. Verify the correctness of the vectorized version\n"
-printf "  7. Verify the speedup of the vectorized version\n"
+printf "  3. Vectorize the code with Codee's pwdirectives tool\n"
+printf "  4. Build the vectorized version\n"
+printf "  5. Verify the correctness\n"
+printf "  6. Verify the speedup\n"
 
 read -p "Press enter to start"
+
 printf "\n"
+printf "##################################################\n"
+printf "0/6. Getting the MBedTLS code ...\n"
+printf "##################################################\n"
+
+tSource0=$(date +%s%3N)
 git submodule update --init -- "MbedTLS/v3.1.0"
 cd "MbedTLS/v3.1.0/"
+tSource1=$(date +%s%3N)
 
 #===============================================================================
 
 printf "\nPre-cleaning the build . . .\n"
-
-git restore library/
+# Support for old git versions
+git checkout -- library/
 rm -rf build buildVec
 
 printf "\nDone.\n"
@@ -54,21 +68,29 @@ printf "\nDone.\n"
 #===============================================================================
 
 printf "##################################################\n"
-printf "1/7. Generating Compile_commands.json and building the neccesary files for the analysis ...\n"
+printf "1/6. Building original MBedTLS code ...\n"
 printf "##################################################\n"
 
-rm -rf build
-cmake \
--DENABLE_TESTING=On \
--DUSE_SHARED_MBEDTLS_LIBRARY=On \
--DCMAKE_BUILD_TYPE=Release \
--DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
--DMBEDTLS_FATAL_WARNINGS=Off \
--Bbuild \
-./ \
--G Ninja
+tBuild0=$(date +%s%3N)
 
-cmake --build build
+# Support for old cmake versions
+mkdir build
+(
+  cd build
+  cmake \
+  -DENABLE_TESTING=On \
+  -DUSE_SHARED_MBEDTLS_LIBRARY=On \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  -DMBEDTLS_FATAL_WARNINGS=Off \
+  -H. ../ \
+  -G Ninja
+
+  ninja
+)
+
+tBuild1=$(date +%s%3N)
+
 
 #===============================================================================
 printf "\nStep 1 done.\n"
@@ -79,128 +101,216 @@ printf "##################################################\n"
 read -p "Press enter to continue"
 printf "\n"
 
-pwreport --screening --config build/compile_commands.json --show-progress --brief
+tScreening0=$(date +%s%3N)
+printRunComm "pwreport --screening --level 1 --config build/compile_commands.json --show-progress"
+tScreening1=$(date +%s%3N)
 
 #===============================================================================
 printf "\nStep 2 done.\n"
 printf "=============================================================\n\n"
 printf "##################################################\n"
-printf "3/7. Generating the Codee's Screening Report for the most important algorithms ...\n"
+printf "3/6. Vectorizing the code with Codee's pwdirectives tool ...\n"
 printf "##################################################\n"
 read -p "Press enter to continue"
 printf "\n"
 
-pwreport --screening --level 2 --config build/compile_commands.json --show-progress --brief library/aes.c library/cmac.c
+printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+printf "aes_xts algorithm\n"
+printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+
+tBuild2=$(date +%s%3N)
+
+printRunComm "pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_xts --brief"
+
+printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+printf "cmac algorithm\n"
+printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+
+printRunComm "pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/cmac.c:cmac_xor_block --brief"
+
+printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+printf "cbc algorithm\n"
+printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+
+printRunComm "pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/aria.c:mbedtls_aria_crypt_cbc --brief"
+
+tBuild3=$(date +%s%3N)
 
 #===============================================================================
 printf "\nStep 3 done.\n"
 printf "=============================================================\n\n"
 printf "##################################################\n"
-printf "4/7. Vectorizing the code with Codee's pwdirectives tool ...\n"
+printf "4/6. Building the vectorized version ...\n"
 printf "##################################################\n"
 read -p "Press enter to continue"
 printf "\n"
 
-printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-printf "aes_xts algorithm\n"
-printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+tBuild4=$(date +%s%3N)
 
-pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_xts
-printf "\nDiff between the original and the vectorized versions:\n"
+# Support for old cmake versions
+mkdir buildVec
 (
-  set +e
-  git --no-pager diff library/aes.c
-  exit 0
-)
-printf "\n"
+  cd buildVec
+  cmake \
+  -DENABLE_TESTING=On \
+  -DUSE_SHARED_MBEDTLS_LIBRARY=On \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  -DCMAKE_C_FLAGS="-fopenmp-simd" \
+  -DMBEDTLS_FATAL_WARNINGS=Off \
+  -H. ../ \
+  -G Ninja
 
-printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-printf "cmac algorithm\n"
-printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-
-pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/cmac.c:cmac_xor_block
-printf "\nDiff between the original and the vectorized versions:\n"
-(
-  set +e
-  git --no-pager diff library/cmac.c
-  exit 0
+  ninja
 )
-printf "\n"
+
+tBuild5=$(date +%s%3N)
 
 #===============================================================================
 printf "\nStep 4 done.\n"
 printf "=============================================================\n\n"
 printf "##################################################\n"
-printf "5/7. Building the vectorized version ...\n"
+printf "5/6. Verifying the correctness ...\n"
 printf "##################################################\n"
 read -p "Press enter to continue"
 printf "\n"
 
-rm -rf buildVec
+tBuild6=$(date +%s%3N)
 
-cmake \
--DENABLE_TESTING=On \
--DUSE_SHARED_MBEDTLS_LIBRARY=On \
--DCMAKE_BUILD_TYPE=Release \
--DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
--DCMAKE_C_FLAGS="-fopenmp-simd" \
--DMBEDTLS_FATAL_WARNINGS=Off \
--BbuildVec \
-./ \
--G Ninja
+cd "build/tests/"
 
-cmake --build buildVec
+printf "\naes_xts original algorithm\n"
+./test_suite_aes.xts | grep 'PASSED'
 
-#===============================================================================
-printf "\nStep 5 done.\n"
-printf "=============================================================\n\n"
-printf "##################################################\n"
-printf "6/7. Verifying the correctness of the vectorized version ...\n"
-printf "##################################################\n"
-read -p "Press enter to continue"
-printf "\n"
+printf "\ncmac original algorithm\n"
+./test_suite_cmac | grep 'PASSED'
+
+printf "\naria (cbc) original algorithm\n"
+./test_suite_aria | grep 'PASSED'
+
+cd ../..
+
+tBuild7=$(date +%s%3N)
 
 cd "buildVec/tests/"
 
-printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-printf "aes_xts algorithm\n"
-printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-./test_suite_aes.xts
+printf "\naes_xts vectorized algorithm\n"
+./test_suite_aes.xts | grep 'PASSED'
 
-printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-printf "cmac algorithm\n"
-printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-./test_suite_cmac
+printf "\ncmac vectorized algorithm\n"
+./test_suite_cmac | grep 'PASSED'
+
+printf "\naria (cbc) original algorithm\n"
+./test_suite_aria | grep 'PASSED'
+
+cd ../..
+tBuild8=$(date +%s%3N)
 
 #===============================================================================
 
-printf "\nStep 6 done.\n"
+printf "\nStep 5 done.\n"
 printf "=============================================================\n\n"
 printf "##################################################\n"
-printf "7/7. Verifying the speedup of the vectorized version ...\n"
+printf "6/6. Verifying the speedup ...\n"
 printf "##################################################\n"
 read -p "Press enter to continue"
 printf "\n"
-cd ../..
 
-printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-printf "aes_xts algorithm\n"
-printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-build/programs/test/benchmark aes_xts
-printf "original done\n"
-printf "************************************************************\n"
-buildVec/programs/test/benchmark aes_xts
-printf "vectorized done\n"
+tDeploy0=$(date +%s%3N)
 
-printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-printf "cmac algorithm\n"
-printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-build/programs/test/benchmark aes_cmac
+aes_xts_ORIGINAL=$(build/programs/test/benchmark aes_xts)
+aes_cmac_ORIGINAL=$(build/programs/test/benchmark aes_cmac)
+aria_cbc_ORIGINAL=$(build/programs/test/benchmark aria)
 printf "original done\n"
-printf "************************************************************\n"
-buildVec/programs/test/benchmark aes_cmac
+
+tDeploy1=$(date +%s%3N)
+
+aes_xts_VECTORIZED=$(buildVec/programs/test/benchmark aes_xts)
+aes_cmac_VECTORIZED=$(buildVec/programs/test/benchmark aes_cmac)
+aria_cbc_VECTORIZED=$(buildVec/programs/test/benchmark aria)
 printf "vectorized done\n"
+tDeploy2=$(date +%s%3N)
+#===============================================================================
+
+tSource=$(bc -l <<< "($tSource1 - $tSource0) /1000")
+tBuildO=$(bc -l <<< "($tBuild1 - $tBuild0) /1000")
+tScreening=$(bc -l <<< "($tScreening1 - $tScreening0) /1000")
+tCodee=$(bc -l <<< "($tBuild3 - $tBuild2) /1000")
+tBuildC=$(bc -l <<< "($tBuild5 - $tBuild4) /1000")
+tTestO=$(bc -l <<< "($tBuild7 - $tBuild6) /1000")
+tTestC=$(bc -l <<< "($tBuild8 - $tBuild7) /1000")
+tDeployO=$(bc -l <<< "($tDeploy1 - $tDeploy0) /1000")
+tDeployC=$(bc -l <<< "($tDeploy2 - $tDeploy1) /1000")
+
+
+printf "\nStep               \tWithout Codee\t\tWith Codee\n"
+printf "=====================\t=============\t\t==========\n"
+printf "CI: SS: Clone        \t%.3f s \t\t%.3f s\n" $tSource $tSource
+printf "CI: BS: pwdirectives \t----- s \t\t%.3f s\n" $tCodee
+printf "CI: BS: make all     \t%.3f s \t\t%.3f s\n" $tBuildO $tBuildC
+printf "CI: BS: Test aes/cmac\t%.3f s \t\t%.3f s\n" $tTestO $tTestC
+printf "CI: DS: Benchmark    \t%.3f s \t\t%.3f s\n" $tDeployO $tDeployC
 
 #===============================================================================
 
-printf "\nDone.\n"
+aes_xts_128_ORIGINAL=$(echo "$aes_xts_ORIGINAL" | grep 'AES-XTS-128' | tr -s ' ' | cut -d ' ' -f 4)
+aes_xts_128_VECTORIZED=$(echo "$aes_xts_VECTORIZED" | grep 'AES-XTS-128' | tr -s ' ' | cut -d ' ' -f 4)
+
+aes_xts_256_ORIGINAL=$(echo "$aes_xts_ORIGINAL" | grep 'AES-XTS-256' | tr -s ' ' | cut -d ' ' -f 4)
+aes_xts_256_VECTORIZED=$(echo "$aes_xts_VECTORIZED" | grep 'AES-XTS-256' | tr -s ' ' | cut -d ' ' -f 4)
+
+#--------------------------------------------------------------------------------
+
+aes_cmac_128_ORIGINAL=$(echo "$aes_cmac_ORIGINAL" | grep 'AES-CMAC-128' | tr -s ' ' | cut -d ' ' -f 4)
+aes_cmac_128_VECTORIZED=$(echo "$aes_cmac_VECTORIZED" | grep 'AES-CMAC-128' | tr -s ' ' | cut -d ' ' -f 4)
+
+aes_cmac_192_ORIGINAL=$(echo "$aes_cmac_ORIGINAL" | grep 'AES-CMAC-192' | tr -s ' ' | cut -d ' ' -f 4)
+aes_cmac_192_VECTORIZED=$(echo "$aes_cmac_VECTORIZED" | grep 'AES-CMAC-192' | tr -s ' ' | cut -d ' ' -f 4)
+
+aes_cmac_256_ORIGINAL=$(echo "$aes_cmac_ORIGINAL" | grep 'AES-CMAC-256' | tr -s ' ' | cut -d ' ' -f 4)
+aes_cmac_256_VECTORIZED=$(echo "$aes_cmac_VECTORIZED" | grep 'AES-CMAC-256' | tr -s ' ' | cut -d ' ' -f 4)
+
+aes_cmac_PRF_128_ORIGINAL=$(echo "$aes_cmac_ORIGINAL" | grep 'AES-CMAC-PRF-128' | tr -s ' ' | cut -d ' ' -f 4)
+aes_cmac_PRF_128_VECTORIZED=$(echo "$aes_cmac_VECTORIZED" | grep 'AES-CMAC-PRF-128' | tr -s ' ' | cut -d ' ' -f 4)
+
+#--------------------------------------------------------------------------------
+
+aria_cbc_128_ORIGINAL=$(echo "$aria_cbc_ORIGINAL" | grep 'ARIA-CBC-128' | tr -s ' ' | cut -d ' ' -f 4)
+aria_cbc_128_VECTORIZED=$(echo "$aria_cbc_VECTORIZED" | grep 'ARIA-CBC-128' | tr -s ' ' | cut -d ' ' -f 4)
+
+aria_cbc_192_ORIGINAL=$(echo "$aria_cbc_ORIGINAL" | grep 'ARIA-CBC-192' | tr -s ' ' | cut -d ' ' -f 4)
+aria_cbc_192_VECTORIZED=$(echo "$aria_cbc_VECTORIZED" | grep 'ARIA-CBC-192' | tr -s ' ' | cut -d ' ' -f 4)
+
+aria_cbc_256_ORIGINAL=$(echo "$aria_cbc_ORIGINAL" | grep 'ARIA-CBC-256' | tr -s ' ' | cut -d ' ' -f 4)
+aria_cbc_256_VECTORIZED=$(echo "$aria_cbc_VECTORIZED" | grep 'ARIA-CBC-256' | tr -s ' ' | cut -d ' ' -f 4)
+
+#--------------------------------------------------------------------------------
+
+SEPARATOR="                    "
+printRow() { # Params: Code, Serial, Multi
+    local SPEEDUP=$(bc -l <<< "(($3-$2)/$2)*100")
+    local i="$1"
+    local j="$2 KiB/s"
+    local k="$3 KiB/s"
+    local l="%.2f%%"
+    LC_NUMERIC="en_US.UTF-8" printf "$i${SEPARATOR:1:20-${#i}}$j${SEPARATOR:1:20-${#j}}$k${SEPARATOR:1:20-${#k}}$l${SEPARATOR:1:20-${#l}}\n" $SPEEDUP
+}
+i="Algorithm"
+j="Original"
+k="Optimized"
+l="Speedup"
+printf "\n$i${SEPARATOR:1:20-${#i}}$j${SEPARATOR:1:20-${#j}}$k${SEPARATOR:1:20-${#k}}$l${SEPARATOR:1:20-${#l}}\n"
+i="================"
+j="============"
+k="======="
+printf "$i${SEPARATOR:1:20-${#i}}$j${SEPARATOR:1:20-${#j}}$j${SEPARATOR:1:20-${#j}}$k${SEPARATOR:1:20-${#k}}\n"
+
+printRow "AES-XTS-128" $aes_xts_128_ORIGINAL $aes_xts_128_VECTORIZED
+printRow "AES-XTS-256" $aes_xts_256_ORIGINAL $aes_xts_256_VECTORIZED
+printRow "AES-CMAC-128" $aes_cmac_128_ORIGINAL $aes_cmac_128_VECTORIZED
+printRow "AES-CMAC-192" $aes_cmac_192_ORIGINAL $aes_cmac_192_VECTORIZED
+printRow "AES-CMAC-256" $aes_cmac_256_ORIGINAL $aes_cmac_256_VECTORIZED
+printRow "AES-CMAC-PRF-128" $aes_cmac_PRF_128_ORIGINAL $aes_cmac_PRF_128_VECTORIZED
+printRow "ARIA-CBC-128" $aria_cbc_128_ORIGINAL $aria_cbc_128_VECTORIZED
+printRow "ARIA-CBC-192" $aria_cbc_192_ORIGINAL $aria_cbc_192_VECTORIZED
+printRow "ARIA-CBC-256" $aria_cbc_256_ORIGINAL $aria_cbc_256_VECTORIZED
