@@ -3,13 +3,14 @@ LIBS = -L$(HOME)/lib -lm
 CFLAGS_KERNEL =  -g -O3 -mavx2 -Wall
 CFLAGS_MAIN   = -g -O0 -fopenmp -Wall
 LDFLAGS       = -O0 -fopenmp
+FILE ?= main.c
+TARGET ?= main
 
-
-OBJ = main.o Step10_orig.o mysecond.o
+OBJ = $(TARGET).o Step10_orig.o mysecond.o
 
 all: run
 
-main.o : main.c
+$(TARGET).o : $(FILE)
 	$(CC) $(CFLAGS_MAIN) -c $< -o $@
 
 mysecond.o : mysecond.c
@@ -25,13 +26,13 @@ Step10_orig.o : Step10_orig.c
 	$(FF) $(FFLAGS) -c $(INCLUDE) $<
 
 
-main: clean $(OBJ)
-	$(LD) $(LDFLAGS) -o HACCmk $(OBJ) $(LIBS)
+$(TARGET): clean $(OBJ)
+	$(LD) $(LDFLAGS) -o $(TARGET) $(OBJ) $(LIBS)
 
 clean:
-	rm -f $(OBJ) HACCmk *.lst *.error *.cobaltlog
+	rm -f $(OBJ) $(TARGET) *.lst *.error *.cobaltlog
  
-run: main
-	./HACCmk
+run: $(TARGET)
+	./$(TARGET)
 
 

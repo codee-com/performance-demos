@@ -1,15 +1,17 @@
-TARGET := bin
-CLASS := B
+TARGET_DIR = bin
+CLASS = B
+FILE ?= cg.c
+TARGET ?= cg
 
 default: run
 
 clean:
-	rm -fr $(TARGET)
+	rm -fr $(TARGET_DIR)
 	rm -f common/*.o CG/*.o
 
 build: clean
-	mkdir -p $(TARGET)
-	$(MAKE) -C CG CLASS=$(CLASS)
+	mkdir -p $(TARGET_DIR)
+	$(MAKE) -C CG CLASS=$(CLASS) FILE=$(FILE) TARGET=$(TARGET)
 
 run: build
-	./$(TARGET)/cg.$(CLASS).x
+	./$(TARGET_DIR)/cg.$(CLASS).x

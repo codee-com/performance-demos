@@ -1,12 +1,14 @@
 SHELL=/bin/sh
 BENCHMARK=cg
 BENCHMARKU=CG
+FILE ?= cg.c
+TARGET ?= cg
 
 include ../config/make.def
 
 include ../sys/make.common
 
-OBJS = cg.o \
+OBJS = $(TARGET).o \
        ${COMMON}/print_results.o  \
        ${COMMON}/${RAND}.o \
        ${COMMON}/c_timers.o \
@@ -19,11 +21,8 @@ ${PROGRAM}: config ${OBJS}
 .c.o:
 	${CCOMPILE} $<
 
-cg.o:		cg.c  globals.h npbparams.h
+$(TARGET).o:		$(FILE)  globals.h npbparams.h
 
 clean:
 	- rm -f *.o *~ 
 	- rm -f npbparams.h core
-
-
-
