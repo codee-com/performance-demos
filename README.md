@@ -3,7 +3,6 @@
 This repository serves to showcase the performance gains achieved with the help of Codee. It provides scripts to benchmark well-known codes using the following software performance optimizations:
 * Vectorization and memory optimizations (Codee installation is required).
 * Multi-threading (Codee installation is optional)
-* Offloading (Codee installation is optional)
 
 ## Quick start: Take advantage of vectorization and memory optimizations with Codee
 This is the recommended way to get started with Codee. It takes advantage of Codee’s “auto” mode, which identifies vectorization and memory optimization opportunities that complement the capabilities provided by the compiler and annotates the source code with compiler pragmas that enable vectorization explicitly. The following real-world codes are used:
@@ -50,6 +49,7 @@ Just follow these simple steps on your computer:
 * First, clone this repository as usual.
 * Second, run the `benchmark-omp-multi.sh` script to measure performance gain using OpenMP multi-threading on your CPU.
   * To run the script, it is necessary to have this software installed in the system: compilers `gcc` or `clang` to build OpenMP multi-threading versions; `unzip` or `sed` to run and benchmark the example codes.
+  * A valid Codee license and package is required. Please, [`contact us at codee.com`](https://www.codee.com/contact-us/).
 
 The following output corresponds to an execution on a laptop running Ubuntu 21.04 and equipped with an AMD Ryzen 4800H CPU and 16 GBs of RAM:
 
@@ -66,18 +66,3 @@ MATMUL          6.36        1.24         80.55% (5.14x)
 NPB_CG          44.33       20.25        54.32% (2.19x)
 PI              3.29        0.46         86.11% (7.20x)
 ```
-
-
-## Quick start: Take advantage of offloading with Codee
-Codee also provides capabilities to take advantage of multi-threading in modern CPUs. The following real-world codes are used:
-* COULOMB: Computation of the electric potential created by a set of charges in an n x n 2D plane.
-* MATMUL: Matrix multiplication.
-* PI: PI number approximation.
-
-Just follow these simple steps on your computer:
-* First, clone this repository as usual.
-* Second, run the `benchmark-acc-offload.sh` script to measure performance gain using OpenACC offloading on your GPU.
-  * To run the script, it is necessary to have this software installed in the system: compilers `nvc` to build OpenACC offloadding versions; `unzip` or `sed` to run and benchmark the example codes.
-
-A similar output would be obtained from the scripts, assuming you have properly setup the GPU software stack on your computer.
-

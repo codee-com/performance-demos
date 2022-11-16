@@ -1,17 +1,18 @@
 #!/bin/bash -e
-export LC_NUMERIC="en_US.UTF-8"
-
 function printRunComm(){
     ## Print the command    
-    echo "$@"
+    printf "\n$ $@\n"
     ## Run the command
     $@
 }
 
 # Check that all required commands are available
-for cmd in git cmake ninja printf pwreport pwdirectives bc; do
-    command -v $cmd >/dev/null 2>&1 || { printf >&2 "$cmd is required but it's not installed. Aborting."; exit 1; }
+for cmd in gcc git cmake ninja printf pwreport pwdirectives bc; do
+    command -v $cmd >/dev/null 2>&1 || { printf >&2 "$cmd is required but it's not installed. Aborting.\n"; exit 1; }
 done
+
+# Set locate for decimal point separator
+export LC_NUMERIC="en_US.UTF-8"
 
 # Check current directory
 if git rev-parse --git-dir > /dev/null 2>&1; then
@@ -30,7 +31,8 @@ if command -v lscpu >/dev/null 2>&1; then
 fi
 
 # Print compiler information
-${CC:-cc} --version
+CC=gcc
+$CC --version
 printf "\n"
 
 printf "##################################################\n"
@@ -79,6 +81,7 @@ mkdir build
   cd build
   cmake \
   -DENABLE_TESTING=On \
+  -DCMAKE_C_COMPILER=$CC \
   -DUSE_SHARED_MBEDTLS_LIBRARY=On \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
@@ -94,7 +97,6 @@ tBuild1=$(date +%s%3N)
 
 #===============================================================================
 printf "\nStep 1 done.\n"
-printf "=============================================================\n\n"
 printf "##################################################\n"
 printf "2/7. Generating the Codee's Screening Report for the whole suite ...\n"
 printf "##################################################\n"
@@ -107,7 +109,6 @@ tScreening1=$(date +%s%3N)
 
 #===============================================================================
 printf "\nStep 2 done.\n"
-printf "=============================================================\n\n"
 printf "##################################################\n"
 printf "3/6. Vectorizing the code with Codee's pwdirectives tool ...\n"
 printf "##################################################\n"
@@ -138,7 +139,6 @@ tBuild3=$(date +%s%3N)
 
 #===============================================================================
 printf "\nStep 3 done.\n"
-printf "=============================================================\n\n"
 printf "##################################################\n"
 printf "4/6. Building the vectorized version ...\n"
 printf "##################################################\n"
@@ -153,6 +153,7 @@ mkdir buildVec
   cd buildVec
   cmake \
   -DENABLE_TESTING=On \
+  -DCMAKE_C_COMPILER=$CC \
   -DUSE_SHARED_MBEDTLS_LIBRARY=On \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
@@ -168,7 +169,6 @@ tBuild5=$(date +%s%3N)
 
 #===============================================================================
 printf "\nStep 4 done.\n"
-printf "=============================================================\n\n"
 printf "##################################################\n"
 printf "5/6. Verifying the correctness ...\n"
 printf "##################################################\n"
@@ -209,7 +209,6 @@ tBuild8=$(date +%s%3N)
 #===============================================================================
 
 printf "\nStep 5 done.\n"
-printf "=============================================================\n\n"
 printf "##################################################\n"
 printf "6/6. Verifying the speedup ...\n"
 printf "##################################################\n"
