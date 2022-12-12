@@ -1,6 +1,6 @@
 #!/bin/bash -e
 function printRunComm(){
-    ## Print the command    
+    ## Print the command
     printf "\n$ $@\n"
     ## Run the command
     $@
@@ -98,7 +98,7 @@ tBuild1=$(date +%s%3N)
 #===============================================================================
 printf "\nStep 1 done.\n"
 printf "##################################################\n"
-printf "2/7. Generating the Codee's Screening Report for the whole suite ...\n"
+printf "2/6. Generating the Codee's Screening Report for the whole suite ...\n"
 printf "##################################################\n"
 read -p "Press enter to continue"
 printf "\n"
