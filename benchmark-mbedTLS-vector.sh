@@ -7,9 +7,20 @@ function printRunComm(){
 }
 
 # Check that all required commands are available
-for cmd in gcc git cmake ninja printf pwreport pwdirectives bc; do
+for cmd in gcc git cmake printf pwreport pwdirectives bc; do
     command -v $cmd >/dev/null 2>&1 || { printf >&2 "$cmd is required but it's not installed. Aborting.\n"; exit 1; }
 done
+
+if command -v ninja --version >/dev/null 2>/dev/null ; then
+    GENERATOR_="Ninja"
+    CALL_GENERATOR="ninja"
+else if command -v make --version >/dev/null 2>/dev/null ; then
+        GENERATOR_="Unix Makefiles"
+        CALL_GENERATOR="make"
+    else 
+        printf "Ninja or Makefile is required but it's not installed. Aborting.\n"; exit 1;
+    fi
+fi
 
 # Set locate for decimal point separator
 export LC_NUMERIC="en_US.UTF-8"
@@ -87,9 +98,9 @@ mkdir build
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -DMBEDTLS_FATAL_WARNINGS=Off \
   -H. ../ \
-  -G Ninja
+  -G "$GENERATOR_"
 
-  ninja
+  $CALL_GENERATOR
 )
 
 tBuild1=$(date +%s%3N)
@@ -166,9 +177,9 @@ mkdir buildVec
   -DCMAKE_C_FLAGS="-fopenmp-simd" \
   -DMBEDTLS_FATAL_WARNINGS=Off \
   -H. ../ \
-  -G Ninja
+  -G "$GENERATOR_"
 
-  ninja
+  $CALL_GENERATOR
 )
 
 tBuild5=$(date +%s%3N)
