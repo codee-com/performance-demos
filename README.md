@@ -1,8 +1,10 @@
 # Codee performance demos
 
 This repository serves to showcase the performance gains achieved with the help of Codee. It provides scripts to benchmark well-known codes using the following software performance optimizations:
-* Vectorization and memory optimizations (Codee installation is required).
-* Multi-threading (Codee installation is optional)
+* Vectorization and memory optimizations (Codee¹ installation is required).
+* Multi-threading (Codee¹ installation is required)
+
+*¹ Make sure that you have the latest Codee version. Please, [`contact us at codee.com`](https://www.codee.com/contact-us/).*
 
 ## Quick start: Take advantage of vectorization and memory optimizations with Codee
 This is the recommended way to get started with Codee. It takes advantage of Codee’s “auto” mode, which identifies vectorization and memory optimization opportunities that complement the capabilities provided by the compiler and annotates the source code with compiler pragmas that enable vectorization explicitly. The following real-world codes are used:
@@ -21,17 +23,20 @@ The following output corresponds to an execution on a laptop running Ubuntu 21.0
 ```
 $ ./benchmark-mbedTLS-vector.sh
 ...
-Algorithm           Original          Optimized         Speedup             
-================    ============      ============      =======             
-AES-XTS-128         613506 KiB/s      774841 KiB/s      26.30%              
-AES-XTS-256         542305 KiB/s      652312 KiB/s      20.29%              
-AES-CMAC-128        660392 KiB/s      887986 KiB/s      34.46%              
-AES-CMAC-192        601832 KiB/s      822032 KiB/s      36.59%              
-AES-CMAC-256        556624 KiB/s      738438 KiB/s      32.66%              
-AES-CMAC-PRF-128    648914 KiB/s      874481 KiB/s      34.76%              
-ARIA-CBC-128        152955 KiB/s      159800 KiB/s      4.48%              
-ARIA-CBC-192        132988 KiB/s      138426 KiB/s      4.09%              
-ARIA-CBC-256        119809 KiB/s      122843 KiB/s      2.53%  
+Algorithm           Original            Optimized           Speedup             
+================    ============        ============        =======             
+AES-XTS-128         643489 KiB/s        776161 KiB/s        20.62%
+AES-XTS-256         548813 KiB/s        657782 KiB/s        19.86%
+AES-CBC-128         696037 KiB/s        999719 KiB/s        43.63%
+AES-CBC-192         639160 KiB/s        895191 KiB/s        40.06%
+AES-CBC-256         597265 KiB/s        793017 KiB/s        32.77%
+AES-CMAC-128        697767 KiB/s        890682 KiB/s        27.65%
+AES-CMAC-192        650263 KiB/s        817205 KiB/s        25.67%
+AES-CMAC-256        605284 KiB/s        753294 KiB/s        24.45%
+AES-CMAC-PRF-128    701772 KiB/s        898686 KiB/s        28.06%
+ARIA-CBC-128        156054 KiB/s        165035 KiB/s        5.76%
+ARIA-CBC-192        137057 KiB/s        145434 KiB/s        6.11%
+ARIA-CBC-256        119480 KiB/s        127936 KiB/s        7.08%
 ```
 
 
