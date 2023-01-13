@@ -1,15 +1,26 @@
 #!/bin/bash -e
 function printRunComm(){
-    ## Print the command    
+    ## Print the command
     printf "\n$ $@\n"
     ## Run the command
     $@
 }
 
 # Check that all required commands are available
-for cmd in gcc git cmake ninja printf pwreport pwdirectives bc; do
+for cmd in gcc git cmake printf pwreport pwdirectives bc; do
     command -v $cmd >/dev/null 2>&1 || { printf >&2 "$cmd is required but it's not installed. Aborting.\n"; exit 1; }
 done
+
+if command -v ninja --version >/dev/null 2>/dev/null ; then
+    GENERATOR_="Ninja"
+    CALL_GENERATOR="ninja"
+else if command -v make --version >/dev/null 2>/dev/null ; then
+        GENERATOR_="Unix Makefiles"
+        CALL_GENERATOR="make"
+    else 
+        printf "Ninja or Makefile is required but it's not installed. Aborting.\n"; exit 1;
+    fi
+fi
 
 # Set locate for decimal point separator
 export LC_NUMERIC="en_US.UTF-8"
@@ -87,9 +98,9 @@ mkdir build
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -DMBEDTLS_FATAL_WARNINGS=Off \
   -H. ../ \
-  -G Ninja
+  -G "$GENERATOR_"
 
-  ninja
+  $CALL_GENERATOR
 )
 
 tBuild1=$(date +%s%3N)
@@ -98,7 +109,7 @@ tBuild1=$(date +%s%3N)
 #===============================================================================
 printf "\nStep 1 done.\n"
 printf "##################################################\n"
-printf "2/7. Generating the Codee's Screening Report for the whole suite ...\n"
+printf "2/6. Generating the Codee's Screening Report for the whole suite ...\n"
 printf "##################################################\n"
 read -p "Press enter to continue"
 printf "\n"
@@ -122,6 +133,12 @@ printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 tBuild2=$(date +%s%3N)
 
 printRunComm "pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_xts --brief"
+
+printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+printf "aes_cbc algorithm\n"
+printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+
+printRunComm "pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_cbc --brief"
 
 printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "cmac algorithm\n"
@@ -160,9 +177,9 @@ mkdir buildVec
   -DCMAKE_C_FLAGS="-fopenmp-simd" \
   -DMBEDTLS_FATAL_WARNINGS=Off \
   -H. ../ \
-  -G Ninja
+  -G "$GENERATOR_"
 
-  ninja
+  $CALL_GENERATOR
 )
 
 tBuild5=$(date +%s%3N)
@@ -182,6 +199,9 @@ cd "build/tests/"
 printf "\naes_xts original algorithm\n"
 ./test_suite_aes.xts | grep 'PASSED'
 
+printf "\naes_cbc original algorithm\n"
+./test_suite_aes.cbc | grep 'PASSED'
+
 printf "\ncmac original algorithm\n"
 ./test_suite_cmac | grep 'PASSED'
 
@@ -196,6 +216,9 @@ cd "buildVec/tests/"
 
 printf "\naes_xts vectorized algorithm\n"
 ./test_suite_aes.xts | grep 'PASSED'
+
+printf "\naes_cbc vectorized algorithm\n"
+./test_suite_aes.cbc | grep 'PASSED'
 
 printf "\ncmac vectorized algorithm\n"
 ./test_suite_cmac | grep 'PASSED'
@@ -218,6 +241,7 @@ printf "\n"
 tDeploy0=$(date +%s%3N)
 
 aes_xts_ORIGINAL=$(build/programs/test/benchmark aes_xts)
+aes_cbc_ORIGINAL=$(build/programs/test/benchmark aes_cbc)
 aes_cmac_ORIGINAL=$(build/programs/test/benchmark aes_cmac)
 aria_cbc_ORIGINAL=$(build/programs/test/benchmark aria)
 printf "original done\n"
@@ -225,6 +249,7 @@ printf "original done\n"
 tDeploy1=$(date +%s%3N)
 
 aes_xts_VECTORIZED=$(buildVec/programs/test/benchmark aes_xts)
+aes_cbc_VECTORIZED=$(buildVec/programs/test/benchmark aes_cbc)
 aes_cmac_VECTORIZED=$(buildVec/programs/test/benchmark aes_cmac)
 aria_cbc_VECTORIZED=$(buildVec/programs/test/benchmark aria)
 printf "vectorized done\n"
@@ -257,6 +282,17 @@ aes_xts_128_VECTORIZED=$(echo "$aes_xts_VECTORIZED" | grep 'AES-XTS-128' | tr -s
 
 aes_xts_256_ORIGINAL=$(echo "$aes_xts_ORIGINAL" | grep 'AES-XTS-256' | tr -s ' ' | cut -d ' ' -f 4)
 aes_xts_256_VECTORIZED=$(echo "$aes_xts_VECTORIZED" | grep 'AES-XTS-256' | tr -s ' ' | cut -d ' ' -f 4)
+
+#--------------------------------------------------------------------------------
+
+aes_cbc_128_ORIGINAL=$(echo "$aes_cbc_ORIGINAL" | grep 'AES-CBC-128' | tr -s ' ' | cut -d ' ' -f 4)
+aes_cbc_128_VECTORIZED=$(echo "$aes_cbc_VECTORIZED" | grep 'AES-CBC-128' | tr -s ' ' | cut -d ' ' -f 4)
+
+aes_cbc_192_ORIGINAL=$(echo "$aes_cbc_ORIGINAL" | grep 'AES-CBC-192' | tr -s ' ' | cut -d ' ' -f 4)
+aes_cbc_192_VECTORIZED=$(echo "$aes_cbc_VECTORIZED" | grep 'AES-CBC-192' | tr -s ' ' | cut -d ' ' -f 4)
+
+aes_cbc_256_ORIGINAL=$(echo "$aes_cbc_ORIGINAL" | grep 'AES-CBC-256' | tr -s ' ' | cut -d ' ' -f 4)
+aes_cbc_256_VECTORIZED=$(echo "$aes_cbc_VECTORIZED" | grep 'AES-CBC-256' | tr -s ' ' | cut -d ' ' -f 4)
 
 #--------------------------------------------------------------------------------
 
@@ -306,6 +342,9 @@ printf "$i${SEPARATOR:1:20-${#i}}$j${SEPARATOR:1:20-${#j}}$j${SEPARATOR:1:20-${#
 
 printRow "AES-XTS-128" $aes_xts_128_ORIGINAL $aes_xts_128_VECTORIZED
 printRow "AES-XTS-256" $aes_xts_256_ORIGINAL $aes_xts_256_VECTORIZED
+printRow "AES-CBC-128" $aes_cbc_128_ORIGINAL $aes_cbc_128_VECTORIZED
+printRow "AES-CBC-192" $aes_cbc_192_ORIGINAL $aes_cbc_192_VECTORIZED
+printRow "AES-CBC-256" $aes_cbc_256_ORIGINAL $aes_cbc_256_VECTORIZED
 printRow "AES-CMAC-128" $aes_cmac_128_ORIGINAL $aes_cmac_128_VECTORIZED
 printRow "AES-CMAC-192" $aes_cmac_192_ORIGINAL $aes_cmac_192_VECTORIZED
 printRow "AES-CMAC-256" $aes_cmac_256_ORIGINAL $aes_cmac_256_VECTORIZED
