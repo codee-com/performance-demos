@@ -1,9 +1,29 @@
 cmake_minimum_required(VERSION 3.10)
 project(common C)
 
+find_package(OpenMP REQUIRED)
+
+# Intel icc
+if("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS} -parallel -O3 -g -Wall -mcmodel=medium")
+# GNU gcc
+elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS} -O3 -g -Wall -mcmodel=medium")
+elseif("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+# LLVM clang-cl
+  if (${CMAKE_C_COMPILER_FRONTEND_VARIANT} STREQUAL "MSVC")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS} /O2 /W3")
+# LLVM clang    
+    elseif (${CMAKE_C_COMPILER_FRONTEND_VARIANT} STREQUAL "GNU")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS} -O3 -g -Wall -mcmodel=medium")
+  endif()
+# cl.exe
+elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS} /O2 /Qpar /W3")
+endif()
+
 set (BINDIR	${CMAKE_CURRENT_SOURCE_DIR}/../bin)
 set (BENCHMARK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../${BENCHMARKU})
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -O3 -fopenmp -mcmodel=medium")
 set(COMMON ${CMAKE_CURRENT_SOURCE_DIR})
 
 

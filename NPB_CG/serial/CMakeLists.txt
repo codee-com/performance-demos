@@ -30,5 +30,4 @@ add_subdirectory(CG)
 add_custom_target(run
     COMMAND ${CMAKE_BINARY_DIR}/bin/${BENCHMARK}.${BENCHMARK_CLASS}.x
     DEPENDS ${BENCHMARK}.${BENCHMARK_CLASS}.x 
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )

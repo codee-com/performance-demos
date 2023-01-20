@@ -1,14 +1,36 @@
 cmake_minimum_required(VERSION 3.10)
 project(MATMUL C)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp -O3")
-set(SOURCES matrix.c clock.c main.c)
-include_directories(./ include)
+find_package(OpenMP REQUIRED)
 
-add_executable(matmul ${SOURCES})
+# Intel icc
+if("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS} -parallel -O3")
+# GNU gcc
+elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS} -O3")
+elseif("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+# LLVM clang-cl
+  if (${CMAKE_C_COMPILER_FRONTEND_VARIANT} STREQUAL "MSVC")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS} /O2")
+# LLVM clang    
+    elseif (${CMAKE_C_COMPILER_FRONTEND_VARIANT} STREQUAL "GNU")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS} -O3")
+  endif()
+# cl.exe
+elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS} /O2 /Qpar")
+endif()
+
+include_directories(include)
+
+add_executable(matmul 
+    matrix.c
+    clock.c
+    main.c
+)
 
 add_custom_target(run
     COMMAND matmul 1500
     DEPENDS matmul
-    WORKING_DIRECTORY ${CMAKE_PROJECT_DIR}
 )
