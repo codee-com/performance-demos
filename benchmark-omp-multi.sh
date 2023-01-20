@@ -11,7 +11,7 @@ function printRunComm(){
 }
 
 # Check that all required commands are available
-for cmd in ${CC:-cc} make exec printf make grep cut tr bc pwdirectives; do
+for cmd in ${CC:-cc} cmake exec printf ninja grep cut tr bc pwdirectives unzip; do
     command -v $cmd >/dev/null 2>&1 || { printf >&2 "$cmd is required but it's not installed. Aborting.\n"; exit 1; }
 done
 
@@ -29,51 +29,30 @@ fi
 ${CC:-cc} --version
 printf "\n"
 
-ATMUX_OMP_MULTI_TARGET="atmux-pwa-omp-multi"
-ATMUX_OMP_MULTI_FILE="$ATMUX_OMP_MULTI_TARGET.c"
-
-CANNY_OMP_MULTI_TARGET="canny-pwa-omp-multi"
-CANNY_OMP_MULTI_FILE="$CANNY_OMP_MULTI_TARGET.c"
-
-COULOMB_OMP_MULTI_TARGET="coulomb-pwa-omp-multi"
-COULOMB_OMP_MULTI_FILE="$COULOMB_OMP_MULTI_TARGET.c"
-
-HACC_OMP_MULTI_TARGET="main-pwa-omp-multi"
-HACC_OMP_MULTI_FILE="$HACC_OMP_MULTI_TARGET.c"
-
-MATMUL_OMP_MULTI_TARGET="main-pwa-omp-multi"
-MATMUL_OMP_MULTI_FILE="$MATMUL_OMP_MULTI_TARGET.c"
-
-NPB_CG_OMP_MULTI_TARGET="cg-pwa-omp-multi"
-NPB_CG_OMP_MULTI_FILE="$NPB_CG_OMP_MULTI_TARGET.c"
-
-PI_OMP_MULTI_TARGET="pi-pwa-omp-multi"
-PI_OMP_MULTI_FILE="$PI_OMP_MULTI_TARGET.c"
-
 printf "##################################################\n"
 printf "Cleaning ... \n"
 printf "##################################################\n"
-make clean --no-print-directory -C ATMUX/serial
-make clean --no-print-directory -C ATMUX/serial FILE=$ATMUX_OMP_MULTI_FILE TARGET=$ATMUX_OMP_MULTI_TARGET 
-rm -f "ATMUX/serial/$ATMUX_OMP_MULTI_FILE"
-make clean --no-print-directory -C CANNY/serial
-make clean --no-print-directory -C CANNY/serial FILE=$CANNY_OMP_MULTI_FILE TARGET=$CANNY_OMP_MULTI_TARGET 
-rm -f "CANNY/serial/$CANNY_OMP_MULTI_FILE"
-make clean --no-print-directory -C COULOMB/serial
-make clean --no-print-directory -C COULOMB/serial FILE=$COULOMB_OMP_MULTI_FILE TARGET=$COULOMB_OMP_MULTI_TARGET  
-rm -f "COULOMB/serial/$COULOMB_OMP_MULTI_FILE"
-make clean --no-print-directory -C HACCmk/serial
-make clean --no-print-directory -C HACCmk/serial FILE=$HACC_OMP_MULTI_FILE TARGET=$HACC_OMP_MULTI_TARGET 
-rm -f "HACCmk/serial/$HACC_OMP_MULTI_FILE"
-make clean --no-print-directory -C MATMUL/serial
-make clean --no-print-directory -C MATMUL/serial FILE=$MATMUL_OMP_MULTI_FILE TARGET=$MATMUL_OMP_MULTI_TARGET 
-rm -f "MATMUL/serial/$MATMUL_OMP_MULTI_FILE"
-make clean --no-print-directory -C NPB_CG/serial
-make clean --no-print-directory -C NPB_CG/serial FILE=$NPB_CG_OMP_MULTI_FILE TARGET=$NPB_CG_OMP_MULTI_TARGET
-rm -f "NPB_CG/serial/CG/$NPB_CG_OMP_MULTI_FILE"
-make clean --no-print-directory -C PI/serial
-make clean --no-print-directory -C PI/serial FILE=$PI_OMP_MULTI_FILE TARGET=$PI_OMP_MULTI_TARGET 
-rm -f "PI/serial/$PI_OMP_MULTI_FILE"
+# ATMUX
+rm -rf ATMUX/serial/build ATMUX/serial/buildOmp
+git checkout -- ATMUX/serial/atmux.c
+# CANNY
+rm -rf CANNY/serial/build CANNY/serial/buildOmp
+git checkout -- CANNY/serial/canny.c
+# COULOMB
+rm -rf COULOMB/serial/build COULOMB/serial/buildOmp
+git checkout -- COULOMB/serial/coulomb.c
+# HACCmk
+rm -rf HACCmk/serial/build HACCmk/serial/buildOmp
+git checkout -- HACCmk/serial/main.c
+# MATMUL
+rm -rf MATMUL/serial/build MATMUL/serial/buildOmp
+git checkout -- MATMUL/serial/main.c
+# NPB_CG
+rm -rf NPB_CG/serial/build NPB_CG/serial/buildOmp
+git checkout -- NPB_CG/serial/CG/cg.c
+# PI
+rm -rf PI/serial/build PI/serial/buildOmp
+git checkout -- PI/serial/pi.c
 
 printf "\n\n"
 
@@ -81,133 +60,335 @@ printf "##################################################\n"
 printf "Executing 1/7: ATMUX... \n"
 printf "##################################################\n"
 
-printf "\nStep 1: Executing serial code ..................."
-ATMUX_SERIAL=$(make run -C ATMUX/serial | grep "time (s)=" | cut -b 11-)
-printf " done"
+cd ATMUX/serial 
+printf "\nStep 1: Compiling serial code\n"
+mkdir build
+(
+  cd build
+  cmake \
+  -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  -H. ../ \
+  -G Ninja
+
+  ninja
+)
 
 printf "\nStep 2: Optimizing code with multithreading ..... done\n"
 
-printRunComm "pwdirectives --omp multi --explicit-privatization y ATMUX/serial/atmux.c:atmux:22:5 \
- --target-compiler-cc ${CC:-cc} -o ATMUX/serial/$ATMUX_OMP_MULTI_FILE --brief -- -I ATMUX/serial/lib/"
-sed -i 's/\/\* y start \*\//0/g' "ATMUX/serial/$ATMUX_OMP_MULTI_FILE"
-sed -i 's/\/\* y length \*\//n/g' "ATMUX/serial/$ATMUX_OMP_MULTI_FILE"
+printRunComm "pwdirectives --omp multi --explicit-privatization y atmux.c:atmux:22:5 \
+ --config build/compile_commands.json -i --brief"
+sed -i 's/\/\* y start \*\//0/g' "atmux.c"
+sed -i 's/\/\* y length \*\//n/g' "atmux.c"
 
-printf "\nStep 3: Executing optimized code ................"
-ATMUX_OMP_MULTI=$(make run -C ATMUX/serial FILE=$ATMUX_OMP_MULTI_FILE TARGET=$ATMUX_OMP_MULTI_TARGET | grep "time (s)=" | cut -b 11-)
+printf "\nStep 3: Compiling optimized code\n"
+mkdir buildOmp
+(
+  cd buildOmp
+  cmake \
+  -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  -H. ../ \
+  -G Ninja
+
+  ninja
+)
+
+printf "\nStep 3: Executing serial code ..................."
+ATMUX_SERIAL=$(build/atmux 10000 | grep "time (s)=" | cut -b 11-)
+printf " done"
+
+printf "\nStep 4: Executing optimized code ................"
+ATMUX_OMP_MULTI=$(buildOmp/atmux 10000 | grep "time (s)=" | cut -b 11-)
 printf " done\n\n\n"
+
+cd ../..
 
 # ---------------------------------------------------------
 printf "##################################################\n"
 printf "Executing 2/7: CANNY... \n"
 printf "##################################################\n"
 
-printf "\nStep 1: Executing serial code ..................."
-CANNY_SERIAL=$(make run -C CANNY/serial | grep "Total time:" | cut -b 13-)
-printf " done"
+cd CANNY/serial 
+unzip -u ../15360_8640.zip
+printf "\nStep 1: Compiling serial code\n"
+mkdir build
+(
+  cd build
+  cmake \
+  -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  -H. ../ \
+  -G Ninja
+
+  ninja
+)
 
 printf "\nStep 2: Optimizing code with multithreading ..... done\n"
 
-printRunComm "pwdirectives --omp multi CANNY/serial/canny.c:gaussian_smooth:492:4 \
- --target-compiler-cc ${CC:-cc} -o CANNY/serial/$CANNY_OMP_MULTI_FILE --brief"
+printRunComm "pwdirectives --omp multi canny.c:gaussian_smooth:492:4 \
+ --config build/compile_commands.json -i --brief"
 
-printRunComm "pwdirectives --omp multi CANNY/serial/$CANNY_OMP_MULTI_FILE:gaussian_smooth:474:4 \
- --target-compiler-cc ${CC:-cc} -i --brief"
+printRunComm "pwdirectives --omp multi canny.c:gaussian_smooth:474:4 \
+ --config build/compile_commands.json -i --brief"
 
+printf "\nStep 3: Compiling optimized code\n"
+mkdir buildOmp
+(
+  cd buildOmp
+  cmake \
+  -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  -H. ../ \
+  -G Ninja
 
-printf "\nStep 3: Executing optimized code ................"
-CANNY_OMP_MULTI=$(make run -C CANNY/serial FILE=$CANNY_OMP_MULTI_FILE TARGET=$CANNY_OMP_MULTI_TARGET | grep "Total time:" | cut -b 13-)
+  ninja
+)
+
+printf "\nStep 3: Executing serial code ..................."
+CANNY_SERIAL=$(build/canny testvecs/input/15360_8640.pgm 0.5 0.7 0.9 | grep "Total time:" | cut -b 13-)
+printf " done"
+
+printf "\nStep 4: Executing optimized code ................"
+CANNY_OMP_MULTI=$(buildOmp/canny testvecs/input/15360_8640.pgm 0.5 0.7 0.9 | grep "Total time:" | cut -b 13-)
 printf " done\n\n\n"
+
+cd ../..
 
 # ---------------------------------------------------------
 printf "##################################################\n"
 printf "Executing 3/7: COULOMB... \n"
 printf "##################################################\n"
 
-printf "\nStep 1: Executing serial code ..................."
-COULOMB_SERIAL=$(make run -C COULOMB/serial | grep "time (s)=" | cut -b 11-)
-printf " done"
+cd COULOMB/serial 
+printf "\nStep 1: Compiling serial code\n"
+mkdir build
+(
+  cd build
+  cmake \
+  -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  -H. ../ \
+  -G Ninja
+
+  ninja
+)
 
 printf "\nStep 2: Optimizing code with multithreading ..... done\n"
 
-printRunComm "pwdirectives --omp multi COULOMB/serial/coulomb.c:coulomb:26:2 \
- --target-compiler-cc ${CC:-cc} -o COULOMB/serial/$COULOMB_OMP_MULTI_FILE --brief"
+printRunComm "pwdirectives --omp multi coulomb.c:coulomb:26:2 \
+ --config build/compile_commands.json -i --brief"
 
-printf "\nStep 3: Executing optimized code ................"
-COULOMB_OMP_MULTI=$(make run -C COULOMB/serial FILE=$COULOMB_OMP_MULTI_FILE TARGET=$COULOMB_OMP_MULTI_TARGET  | grep "time (s)=" | cut -b 11-)
+printf "\nStep 3: Compiling optimized code\n"
+mkdir buildOmp
+(
+  cd buildOmp
+  cmake \
+  -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  -H. ../ \
+  -G Ninja
+
+  ninja
+)
+
+printf "\nStep 3: Executing serial code ..................."
+COULOMB_SERIAL=$(build/coulomb 400 | grep "time (s)=" | cut -b 11-)
+printf " done"
+
+printf "\nStep 4: Executing optimized code ................"
+COULOMB_OMP_MULTI=$(buildOmp/coulomb 400 | grep "time (s)=" | cut -b 11-)
 printf " done\n\n\n"
+
+cd ../..
 
 # ---------------------------------------------------------
 printf "##################################################\n"
 printf "Executing 4/7: HACCmk... \n"
 printf "##################################################\n"
 
-printf "\nStep 1: Executing serial code ..................."
-HACC_SERIAL=$(make run -C HACCmk/serial | grep "Kernel elapsed time, s:" | tr -s ' ' | cut -d ' ' -f 5)
-printf " done"
+cd HACCmk/serial 
+printf "\nStep 1: Compiling serial code\n"
+mkdir build
+(
+  cd build
+  cmake \
+  -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  -H. ../ \
+  -G Ninja
+
+  ninja
+)
 
 printf "\nStep 2: Optimizing code with multithreading ..... done\n"
 
-printRunComm "pwdirectives --omp multi --config HACCmk/serial/pw.json HACCmk/serial/main.c:main:132:7 
- --target-compiler-cc ${CC:-cc} -o HACCmk/serial/$HACC_OMP_MULTI_FILE --brief"
+printRunComm "pwdirectives --omp multi --config pw.json main.c:main:132:7 \
+ --target-compiler-cc ${CC:-cc} -i --brief"
 
-printf "\nStep 3: Executing optimized code ................"
-HACC_OMP_MULTI=$(make run -C HACCmk/serial FILE=$HACC_OMP_MULTI_FILE TARGET=$HACC_OMP_MULTI_TARGET | grep "Kernel elapsed time, s:" | tr -s ' ' | cut -d ' ' -f 5)
+printf "\nStep 3: Compiling optimized code\n"
+mkdir buildOmp
+(
+  cd buildOmp
+  cmake \
+  -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  -H. ../ \
+  -G Ninja
+
+  ninja
+)
+
+printf "\nStep 3: Executing serial code ..................."
+HACC_SERIAL=$(build/main | grep "Kernel elapsed time, s:" | tr -s ' ' | cut -d ' ' -f 5)
+printf " done"
+
+printf "\nStep 4: Executing optimized code ................"
+HACC_OMP_MULTI=$(buildOmp/main | grep "Kernel elapsed time, s:" | tr -s ' ' | cut -d ' ' -f 5)
 printf " done\n\n\n"
+
+cd ../..
 
 # ---------------------------------------------------------
 printf "##################################################\n"
 printf "Executing 5/7: MATMUL... \n"
 printf "##################################################\n"
 
-printf "\nStep 1: Executing serial code ..................."
-MATMUL_SERIAL=$(make run -C MATMUL/serial | grep "time (s)=" | cut -b 11-)
-printf " done"
+cd MATMUL/serial 
+printf "\nStep 1: Compiling serial code\n"
+mkdir build
+(
+  cd build
+  cmake \
+  -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  -H. ../ \
+  -G Ninja
+
+  ninja
+)
 
 printf "\nStep 2: Optimizing code with multithreading ..... done\n"
 
-printRunComm " pwdirectives --omp multi MATMUL/serial/main.c:matmul:15:5 \
- --target-compiler-cc ${CC:-cc} -o MATMUL/serial/$MATMUL_OMP_MULTI_FILE --brief -- -I MATMUL/serial/include"
+printRunComm "pwdirectives --omp multi main.c:matmul:15:5 \
+ --config build/compile_commands.json -i --brief"
 
-printf "\nStep 3: Executing optimized code ................"
-MATMUL_OMP_MULTI=$(make run -C MATMUL/serial FILE=$MATMUL_OMP_MULTI_FILE TARGET=$MATMUL_OMP_MULTI_TARGET | grep "time (s)=" | cut -b 11-)
+printf "\nStep 3: Compiling optimized code\n"
+mkdir buildOmp
+(
+  cd buildOmp
+  cmake \
+  -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  -H. ../ \
+  -G Ninja
+
+  ninja
+)
+
+printf "\nStep 3: Executing serial code ..................."
+MATMUL_SERIAL=$(build/matmul 1500 | grep "time (s)=" | cut -b 11-)
+printf " done"
+
+printf "\nStep 4: Executing optimized code ................"
+MATMUL_OMP_MULTI=$(buildOmp/matmul 1500 | grep "time (s)=" | cut -b 11-)
 printf " done\n\n\n"
 
-# ---------------------------------------------------------
+cd ../..
+
+# # ---------------------------------------------------------
 printf "##################################################\n"
 printf "Executing 6/7: NPB_CG... \n"
 printf "##################################################\n"
 
-printf "\nStep 1: Executing serial code ..................."
-NPB_CG_SERIAL=$(make run -C NPB_CG/serial | grep "Time in seconds" | tr -s ' ' | cut -d ' ' -f 6)
-printf " done"
+cd NPB_CG/serial 
+printf "\nStep 1: Compiling serial code\n"
+mkdir build
+(
+  cd build
+  cmake \
+  -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  -H. ../ \
+  -G Ninja
+
+  ninja
+)
 
 printf "\nStep 2: Optimizing code with multithreading ..... done\n"
 
-printRunComm "pwdirectives --omp multi NPB_CG/serial/CG/cg.c:conj_grad:458:5 \
- --target-compiler-cc ${CC:-cc} -o NPB_CG/serial/CG/$NPB_CG_OMP_MULTI_FILE --brief -- -I NPB_CG/serial/common"
+printRunComm "pwdirectives --omp multi CG/cg.c:conj_grad:458:5 \
+  --config build/compile_commands.json -i --brief"
 
-printf "\nStep 3: Executing optimized code ................"
-NPB_CG_OMP_MULTI=$(make run -C NPB_CG/serial FILE=$NPB_CG_OMP_MULTI_FILE TARGET=$NPB_CG_OMP_MULTI_TARGET | grep "Time in seconds" | tr -s ' ' | cut -d ' ' -f 6)
+printf "\nStep 3: Compiling optimized code\n"
+mkdir buildOmp
+(
+  cd buildOmp
+  cmake \
+  -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  -H. ../ \
+  -G Ninja
+
+  ninja
+)
+
+printf "\nStep 3: Executing serial code ..................."
+NPB_CG_SERIAL=$(build/bin/cg.B.x | grep "Time in seconds" | tr -s ' ' | cut -d ' ' -f 6)
+printf " done"
+
+printf "\nStep 4: Executing optimized code ................"
+NPB_CG_OMP_MULTI=$(buildOmp/bin/cg.B.x | grep "Time in seconds" | tr -s ' ' | cut -d ' ' -f 6)
 printf " done\n\n\n"
+
+cd ../..
 
 # ---------------------------------------------------------
 printf "##################################################\n"
 printf "Executing 7/7: PI... \n"
 printf "##################################################\n"
 
-printf "\nStep 1: Executing serial code ..................."
-PI_SERIAL=$(make run -C PI/serial | grep "time (s)=" | cut -b 11-)
-printf " done"
+cd PI/serial 
+printf "\nStep 1: Compiling serial code\n"
+mkdir build
+(
+  cd build
+  cmake \
+  -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  -H. ../ \
+  -G Ninja
+
+  ninja
+)
 
 printf "\nStep 2: Optimizing code with multithreading ..... done\n"
 
-printRunComm "pwdirectives --omp multi PI/serial/pi.c:main:31:5 \
- --target-compiler-cc ${CC:-cc} -o PI/serial/$PI_OMP_MULTI_FILE --brief"
+printRunComm "pwdirectives --omp multi pi.c:main:31:5 \
+ --config build/compile_commands.json -i --brief"
 
+printf "\nStep 3: Compiling optimized code\n"
+mkdir buildOmp
+(
+  cd buildOmp
+  cmake \
+  -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+  -H. ../ \
+  -G Ninja
 
-printf "\nStep 3: Executing optimized code ................"
-PI_OMP_MULTI=$(make run -C PI/serial FILE=$PI_OMP_MULTI_FILE TARGET=$PI_OMP_MULTI_TARGET | grep "time (s)=" | cut -b 11-)
+  ninja
+)
+
+printf "\nStep 3: Executing serial code ..................."
+PI_SERIAL=$(build/pi 1000000000 | grep "time (s)=" | cut -b 11-)
+printf " done"
+
+printf "\nStep 4: Executing optimized code ................"
+PI_OMP_MULTI=$(buildOmp/pi 1000000000 | grep "time (s)=" | cut -b 11-)
 printf " done\n\n\n"
+
+cd ../..
 
 printf "##################################################\n"
 printf "Benchmarking optimized codes\n"
