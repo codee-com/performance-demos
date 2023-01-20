@@ -1,4 +1,8 @@
 #!/bin/bash -e
+# This script builds and runs the serial and OpenMP vectorized versions of MbedTLS
+# gathering the Ki/s and printing a table with the corresponding speedups.
+# Either gcc, clang or icc can be used to build; it can chosen through the CC variable.
+
 function printRunComm(){
     ## Print the command
     printf "\n$ $@\n"
@@ -7,7 +11,7 @@ function printRunComm(){
 }
 
 # Check that all required commands are available
-for cmd in gcc git cmake printf pwreport pwdirectives bc; do
+for cmd in git cmake printf pwreport pwdirectives bc; do
     command -v $cmd >/dev/null 2>&1 || { printf >&2 "$cmd is required but it's not installed. Aborting.\n"; exit 1; }
 done
 
@@ -41,9 +45,28 @@ if command -v lscpu >/dev/null 2>&1; then
     printf "\n"
 fi
 
+# Varialbes configuration
+# Num warmup runs
+if [ -z "$RUNS_WARMUP" ]; then
+  RUNS_WARMUP=0
+fi  
+# Num runs
+if [ -z "$RUNS" ]; then
+  RUNS=2
+fi
+
+
 # Print compiler information
-CC=gcc
-$CC --version
+${CC:-cc} --version
+
+# Compiler_flags
+IS_ICC=$(${CC:-cc} --version 2> /dev/null | grep 'icc' || true)
+if [ -z "$IS_ICC" ]; then
+    EXTRA_FLAGS="$CFLAGS -fopenmp-simd"
+else
+    EXTRA_FLAGS="$CFLAGS -qopenmp-simd"
+fi
+
 printf "\n"
 
 printf "##################################################\n"
@@ -92,7 +115,7 @@ mkdir build
   cd build
   cmake \
   -DENABLE_TESTING=On \
-  -DCMAKE_C_COMPILER=$CC \
+  -DCMAKE_C_COMPILER=${CC:-cc} \
   -DUSE_SHARED_MBEDTLS_LIBRARY=On \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
@@ -115,7 +138,7 @@ read -p "Press enter to continue"
 printf "\n"
 
 tScreening0=$(date +%s%3N)
-printRunComm "pwreport --screening --level 1 --config build/compile_commands.json --show-progress"
+printRunComm "pwreport --screening --level 1 --config build/compile_commands.json --show-progress $CODEE_FLAGS"
 tScreening1=$(date +%s%3N)
 
 #===============================================================================
@@ -132,25 +155,26 @@ printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 tBuild2=$(date +%s%3N)
 
-printRunComm "pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_xts --brief"
+printRunComm "pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_xts --brief $CODEE_FLAGS"
 
 printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "aes_cbc algorithm\n"
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 
-printRunComm "pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_cbc --brief"
+printRunComm "pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_cbc --brief $CODEE_FLAGS"
+
 
 printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "cmac algorithm\n"
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 
-printRunComm "pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/cmac.c:cmac_xor_block --brief"
+printRunComm "pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/cmac.c:cmac_xor_block --brief $CODEE_FLAGS"
 
 printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "cbc algorithm\n"
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 
-printRunComm "pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/aria.c:mbedtls_aria_crypt_cbc --brief"
+printRunComm "pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/aria.c:mbedtls_aria_crypt_cbc --brief $CODEE_FLAGS"
 
 tBuild3=$(date +%s%3N)
 
@@ -170,11 +194,11 @@ mkdir buildVec
   cd buildVec
   cmake \
   -DENABLE_TESTING=On \
-  -DCMAKE_C_COMPILER=$CC \
+  -DCMAKE_C_COMPILER=${CC:-cc} \
   -DUSE_SHARED_MBEDTLS_LIBRARY=On \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-  -DCMAKE_C_FLAGS="-fopenmp-simd" \
+  -DCMAKE_C_FLAGS="$EXTRA_FLAGS" \
   -DMBEDTLS_FATAL_WARNINGS=Off \
   -H. ../ \
   -G "$GENERATOR_"
@@ -239,19 +263,105 @@ read -p "Press enter to continue"
 printf "\n"
 
 tDeploy0=$(date +%s%3N)
-
-aes_xts_ORIGINAL=$(build/programs/test/benchmark aes_xts)
-aes_cbc_ORIGINAL=$(build/programs/test/benchmark aes_cbc)
-aes_cmac_ORIGINAL=$(build/programs/test/benchmark aes_cmac)
-aria_cbc_ORIGINAL=$(build/programs/test/benchmark aria)
+for (( i=1; i<=$RUNS_WARMUP; i++ ))
+do
+    build/programs/test/benchmark aes_xts > /dev/null
+done
+for (( i=1; i<=$RUNS; i++ ))
+do
+    aes_xts_ORIGINAL=$(build/programs/test/benchmark aes_xts)
+    aes_xts_128_ORIGINAL_A[$i]=$(echo "$aes_xts_ORIGINAL" | grep 'AES-XTS-128' | tr -s ' ' | cut -d ' ' -f 4)
+    aes_xts_256_ORIGINAL_A[$i]=$(echo "$aes_xts_ORIGINAL" | grep 'AES-XTS-256' | tr -s ' ' | cut -d ' ' -f 4)
+done
+#--------------------------------------------------------------------------------
+for (( i=1; i<=$RUNS_WARMUP; i++ ))
+do
+    build/programs/test/benchmark aes_cbc > /dev/null
+done
+for (( i=1; i<=$RUNS; i++ ))
+do
+    aes_cbc_ORIGINAL=$(build/programs/test/benchmark aes_cbc)
+    aes_cbc_128_ORIGINAL_A[$i]=$(echo "$aes_cbc_ORIGINAL" | grep 'AES-CBC-128' | tr -s ' ' | cut -d ' ' -f 4)
+    aes_cbc_192_ORIGINAL_A[$i]=$(echo "$aes_cbc_ORIGINAL" | grep 'AES-CBC-192' | tr -s ' ' | cut -d ' ' -f 4)
+    aes_cbc_256_ORIGINAL_A[$i]=$(echo "$aes_cbc_ORIGINAL" | grep 'AES-CBC-256' | tr -s ' ' | cut -d ' ' -f 4)
+done
+#--------------------------------------------------------------------------------
+for (( i=1; i<=$RUNS_WARMUP; i++ ))
+do
+    build/programs/test/benchmark aes_cmac  > /dev/null
+done
+for (( i=1; i<=$RUNS; i++ ))
+do
+    aes_cmac_ORIGINAL=$(build/programs/test/benchmark aes_cmac)
+    aes_cmac_128_ORIGINAL_A[$i]=$(echo "$aes_cmac_ORIGINAL" | grep 'AES-CMAC-128' | tr -s ' ' | cut -d ' ' -f 4)
+    aes_cmac_192_ORIGINAL_A[$i]=$(echo "$aes_cmac_ORIGINAL" | grep 'AES-CMAC-192' | tr -s ' ' | cut -d ' ' -f 4)
+    aes_cmac_256_ORIGINAL_A[$i]=$(echo "$aes_cmac_ORIGINAL" | grep 'AES-CMAC-256' | tr -s ' ' | cut -d ' ' -f 4)
+    aes_cmac_PRF_128_ORIGINAL_A[$i]=$(echo "$aes_cmac_ORIGINAL" | grep 'AES-CMAC-PRF-128' | tr -s ' ' | cut -d ' ' -f 4)
+done
+#--------------------------------------------------------------------------------
+for (( i=1; i<=$RUNS_WARMUP; i++ ))
+do
+    build/programs/test/benchmark aria  > /dev/null
+done
+for (( i=1; i<=$RUNS; i++ ))
+do
+    aria_cbc_ORIGINAL=$(build/programs/test/benchmark aria)
+    aria_cbc_128_ORIGINAL_A[$i]=$(echo "$aria_cbc_ORIGINAL" | grep 'ARIA-CBC-128' | tr -s ' ' | cut -d ' ' -f 4)
+    aria_cbc_192_ORIGINAL_A[$i]=$(echo "$aria_cbc_ORIGINAL" | grep 'ARIA-CBC-192' | tr -s ' ' | cut -d ' ' -f 4)
+    aria_cbc_256_ORIGINAL_A[$i]=$(echo "$aria_cbc_ORIGINAL" | grep 'ARIA-CBC-256' | tr -s ' ' | cut -d ' ' -f 4)
+done
+#--------------------------------------------------------------------------------
 printf "original done\n"
-
+#--------------------------------------------------------------------------------
 tDeploy1=$(date +%s%3N)
-
-aes_xts_VECTORIZED=$(buildVec/programs/test/benchmark aes_xts)
-aes_cbc_VECTORIZED=$(buildVec/programs/test/benchmark aes_cbc)
-aes_cmac_VECTORIZED=$(buildVec/programs/test/benchmark aes_cmac)
-aria_cbc_VECTORIZED=$(buildVec/programs/test/benchmark aria)
+for (( i=1; i<=$RUNS_WARMUP; i++ ))
+do
+    buildVec/programs/test/benchmark aes_xts > /dev/null
+done
+for (( i=1; i<=$RUNS; i++ ))
+do
+    aes_xts_VECTORIZED=$(buildVec/programs/test/benchmark aes_xts)
+    aes_xts_128_VECTORIZED_A[$i]=$(echo "$aes_xts_VECTORIZED" | grep 'AES-XTS-128' | tr -s ' ' | cut -d ' ' -f 4)
+    aes_xts_256_VECTORIZED_A[$i]=$(echo "$aes_xts_VECTORIZED" | grep 'AES-XTS-256' | tr -s ' ' | cut -d ' ' -f 4)
+done
+#--------------------------------------------------------------------------------
+for (( i=1; i<=$RUNS_WARMUP; i++ ))
+do
+    buildVec/programs/test/benchmark aes_cbc > /dev/null
+done
+for (( i=1; i<=$RUNS; i++ ))
+do
+    aes_cbc_VECTORIZED=$(buildVec/programs/test/benchmark aes_cbc)
+    aes_cbc_128_VECTORIZED_A[$i]=$(echo "$aes_cbc_VECTORIZED" | grep 'AES-CBC-128' | tr -s ' ' | cut -d ' ' -f 4)
+    aes_cbc_192_VECTORIZED_A[$i]=$(echo "$aes_cbc_VECTORIZED" | grep 'AES-CBC-192' | tr -s ' ' | cut -d ' ' -f 4)
+    aes_cbc_256_VECTORIZED_A[$i]=$(echo "$aes_cbc_VECTORIZED" | grep 'AES-CBC-256' | tr -s ' ' | cut -d ' ' -f 4)
+done
+#--------------------------------------------------------------------------------
+for (( i=1; i<=$RUNS_WARMUP; i++ ))
+do
+    buildVec/programs/test/benchmark aes_cmac > /dev/null
+done
+for (( i=1; i<=$RUNS; i++ ))
+do
+    aes_cmac_VECTORIZED=$(buildVec/programs/test/benchmark aes_cmac)
+    aes_cmac_128_VECTORIZED_A[$i]=$(echo "$aes_cmac_VECTORIZED" | grep 'AES-CMAC-128' | tr -s ' ' | cut -d ' ' -f 4)
+    aes_cmac_192_VECTORIZED_A[$i]=$(echo "$aes_cmac_VECTORIZED" | grep 'AES-CMAC-192' | tr -s ' ' | cut -d ' ' -f 4)
+    aes_cmac_256_VECTORIZED_A[$i]=$(echo "$aes_cmac_VECTORIZED" | grep 'AES-CMAC-256' | tr -s ' ' | cut -d ' ' -f 4)
+    aes_cmac_PRF_128_VECTORIZED_A[$i]=$(echo "$aes_cmac_VECTORIZED" | grep 'AES-CMAC-PRF-128' | tr -s ' ' | cut -d ' ' -f 4)
+done
+#--------------------------------------------------------------------------------
+for (( i=1; i<=$RUNS_WARMUP; i++ ))
+do
+    buildVec/programs/test/benchmark aria > /dev/null
+done
+for (( i=1; i<=$RUNS; i++ ))
+do
+    aria_cbc_VECTORIZED=$(buildVec/programs/test/benchmark aria)
+    aria_cbc_128_VECTORIZED_A[$i]=$(echo "$aria_cbc_VECTORIZED" | grep 'ARIA-CBC-128' | tr -s ' ' | cut -d ' ' -f 4)
+    aria_cbc_192_VECTORIZED_A[$i]=$(echo "$aria_cbc_VECTORIZED" | grep 'ARIA-CBC-192' | tr -s ' ' | cut -d ' ' -f 4)
+    aria_cbc_256_VECTORIZED_A[$i]=$(echo "$aria_cbc_VECTORIZED" | grep 'ARIA-CBC-256' | tr -s ' ' | cut -d ' ' -f 4)
+done
+#--------------------------------------------------------------------------------
 printf "vectorized done\n"
 tDeploy2=$(date +%s%3N)
 #===============================================================================
@@ -263,8 +373,8 @@ tCodee=$(bc -l <<< "($tBuild3 - $tBuild2) /1000")
 tBuildC=$(bc -l <<< "($tBuild5 - $tBuild4) /1000")
 tTestO=$(bc -l <<< "($tBuild7 - $tBuild6) /1000")
 tTestC=$(bc -l <<< "($tBuild8 - $tBuild7) /1000")
-tDeployO=$(bc -l <<< "($tDeploy1 - $tDeploy0) /1000")
-tDeployC=$(bc -l <<< "($tDeploy2 - $tDeploy1) /1000")
+tDeployO=$(bc -l <<< "(($tDeploy1 - $tDeploy0)/($RUNS+$RUNS_WARMUP)) /1000")
+tDeployC=$(bc -l <<< "(($tDeploy2 - $tDeploy1)/($RUNS+$RUNS_WARMUP)) /1000")
 
 
 printf "\nStep               \tWithout Codee\t\tWith Codee\n"
@@ -275,60 +385,95 @@ printf "CI: BS: make all     \t%.3f s \t\t%.3f s\n" $tBuildO $tBuildC
 printf "CI: BS: Test aes/cmac\t%.3f s \t\t%.3f s\n" $tTestO $tTestC
 printf "CI: DS: Benchmark    \t%.3f s \t\t%.3f s\n" $tDeployO $tDeployC
 
-#===============================================================================
+aes_xts_128_ORIGINAL=0
+aes_xts_128_VECTORIZED=0
+aes_xts_256_ORIGINAL=0
+aes_xts_256_VECTORIZED=0
+aes_cbc_128_ORIGINAL=0
+aes_cbc_128_VECTORIZED=0
+aes_cbc_192_ORIGINAL=0
+aes_cbc_192_VECTORIZED=0
+aes_cbc_256_ORIGINAL=0
+aes_cbc_256_VECTORIZED=0
+aes_cmac_128_ORIGINAL=0
+aes_cmac_128_VECTORIZED=0
+aes_cmac_192_ORIGINAL=0
+aes_cmac_192_VECTORIZED=0
+aes_cmac_256_ORIGINAL=0
+aes_cmac_256_VECTORIZED=0
+aes_cmac_PRF_128_ORIGINAL=0
+aes_cmac_PRF_128_VECTORIZED=0
+aria_cbc_128_ORIGINAL=0
+aria_cbc_128_VECTORIZED=0
+aria_cbc_192_ORIGINAL=0
+aria_cbc_192_VECTORIZED=0
+aria_cbc_256_ORIGINAL=0
+aria_cbc_256_VECTORIZED=0
+for (( i=1; i<=$RUNS; i++ ))
+do
+    aes_xts_128_ORIGINAL=$(bc -l <<< "$aes_xts_128_ORIGINAL + ${aes_xts_128_ORIGINAL_A[$i]}")
+    aes_xts_128_VECTORIZED=$(bc -l <<< "$aes_xts_128_VECTORIZED + ${aes_xts_128_VECTORIZED_A[$i]}")
+    aes_xts_256_ORIGINAL=$(bc -l <<< "$aes_xts_256_ORIGINAL + ${aes_xts_256_ORIGINAL_A[$i]}")
+    aes_xts_256_VECTORIZED=$(bc -l <<< "$aes_xts_256_VECTORIZED + ${aes_xts_256_VECTORIZED_A[$i]}")
+    aes_cbc_128_ORIGINAL=$(bc -l <<< "$aes_cbc_128_ORIGINAL + ${aes_cbc_128_ORIGINAL_A[$i]}")
+    aes_cbc_128_VECTORIZED=$(bc -l <<< "$aes_cbc_128_VECTORIZED + ${aes_cbc_128_VECTORIZED_A[$i]}")
+    aes_cbc_192_ORIGINAL=$(bc -l <<< "$aes_cbc_192_ORIGINAL + ${aes_cbc_192_ORIGINAL_A[$i]}")
+    aes_cbc_192_VECTORIZED=$(bc -l <<< "$aes_cbc_192_VECTORIZED + ${aes_cbc_192_VECTORIZED_A[$i]}")
+    aes_cbc_256_ORIGINAL=$(bc -l <<< "$aes_cbc_256_ORIGINAL + ${aes_cbc_256_ORIGINAL_A[$i]}")
+    aes_cbc_256_VECTORIZED=$(bc -l <<< "$aes_cbc_256_VECTORIZED + ${aes_cbc_256_VECTORIZED_A[$i]}")
+    aes_cmac_128_ORIGINAL=$(bc -l <<< "$aes_cmac_128_ORIGINAL + ${aes_cmac_128_ORIGINAL_A[$i]}")
+    aes_cmac_128_VECTORIZED=$(bc -l <<< "$aes_cmac_128_VECTORIZED + ${aes_cmac_128_VECTORIZED_A[$i]}")
+    aes_cmac_192_ORIGINAL=$(bc -l <<< "$aes_cmac_192_ORIGINAL + ${aes_cmac_192_ORIGINAL_A[$i]}")
+    aes_cmac_192_VECTORIZED=$(bc -l <<< "$aes_cmac_192_VECTORIZED + ${aes_cmac_192_VECTORIZED_A[$i]}")
+    aes_cmac_256_ORIGINAL=$(bc -l <<< "$aes_cmac_256_ORIGINAL + ${aes_cmac_256_ORIGINAL_A[$i]}")
+    aes_cmac_256_VECTORIZED=$(bc -l <<< "$aes_cmac_256_VECTORIZED + ${aes_cmac_256_VECTORIZED_A[$i]}")
+    aes_cmac_PRF_128_ORIGINAL=$(bc -l <<< "$aes_cmac_PRF_128_ORIGINAL + ${aes_cmac_PRF_128_ORIGINAL_A[$i]}")
+    aes_cmac_PRF_128_VECTORIZED=$(bc -l <<< "$aes_cmac_PRF_128_VECTORIZED + ${aes_cmac_PRF_128_VECTORIZED_A[$i]}")
+    aria_cbc_128_ORIGINAL=$(bc -l <<< "$aria_cbc_128_ORIGINAL + ${aria_cbc_128_ORIGINAL_A[$i]}")
+    aria_cbc_128_VECTORIZED=$(bc -l <<< "$aria_cbc_128_VECTORIZED + ${aria_cbc_128_VECTORIZED_A[$i]}")
+    aria_cbc_192_ORIGINAL=$(bc -l <<< "$aria_cbc_192_ORIGINAL + ${aria_cbc_192_ORIGINAL_A[$i]}")
+    aria_cbc_192_VECTORIZED=$(bc -l <<< "$aria_cbc_192_VECTORIZED + ${aria_cbc_192_VECTORIZED_A[$i]}")
+    aria_cbc_256_ORIGINAL=$(bc -l <<< "$aria_cbc_256_ORIGINAL + ${aria_cbc_256_ORIGINAL_A[$i]}")
+    aria_cbc_256_VECTORIZED=$(bc -l <<< "$aria_cbc_256_VECTORIZED + ${aria_cbc_256_VECTORIZED_A[$i]}")
+done 
+aes_xts_128_ORIGINAL=$(bc -l <<< "$aes_xts_128_ORIGINAL / $RUNS")
+aes_xts_128_VECTORIZED=$(bc -l <<< "$aes_xts_128_VECTORIZED / $RUNS")
+aes_xts_256_ORIGINAL=$(bc -l <<< "$aes_xts_256_ORIGINAL / $RUNS")
+aes_xts_256_VECTORIZED=$(bc -l <<< "$aes_xts_256_VECTORIZED / $RUNS")
+aes_cbc_128_ORIGINAL=$(bc -l <<< "$aes_cbc_128_ORIGINAL / $RUNS")
+aes_cbc_128_VECTORIZED=$(bc -l <<< "$aes_cbc_128_VECTORIZED / $RUNS")
+aes_cbc_192_ORIGINAL=$(bc -l <<< "$aes_cbc_192_ORIGINAL / $RUNS")
+aes_cbc_192_VECTORIZED=$(bc -l <<< "$aes_cbc_192_VECTORIZED / $RUNS")
+aes_cbc_256_ORIGINAL=$(bc -l <<< "$aes_cbc_256_ORIGINAL / $RUNS")
+aes_cbc_256_VECTORIZED=$(bc -l <<< "$aes_cbc_256_VECTORIZED / $RUNS")
+aes_cmac_128_ORIGINAL=$(bc -l <<< "$aes_cmac_128_ORIGINAL / $RUNS")
+aes_cmac_128_VECTORIZED=$(bc -l <<< "$aes_cmac_128_VECTORIZED / $RUNS")
+aes_cmac_192_ORIGINAL=$(bc -l <<< "$aes_cmac_192_ORIGINAL / $RUNS")
+aes_cmac_192_VECTORIZED=$(bc -l <<< "$aes_cmac_192_VECTORIZED / $RUNS")
+aes_cmac_256_ORIGINAL=$(bc -l <<< "$aes_cmac_256_ORIGINAL / $RUNS")
+aes_cmac_256_VECTORIZED=$(bc -l <<< "$aes_cmac_256_VECTORIZED / $RUNS")
+aes_cmac_PRF_128_ORIGINAL=$(bc -l <<< "$aes_cmac_PRF_128_ORIGINAL / $RUNS")
+aes_cmac_PRF_128_VECTORIZED=$(bc -l <<< "$aes_cmac_PRF_128_VECTORIZED / $RUNS")
+aria_cbc_128_ORIGINAL=$(bc -l <<< "$aria_cbc_128_ORIGINAL / $RUNS")
+aria_cbc_128_VECTORIZED=$(bc -l <<< "$aria_cbc_128_VECTORIZED / $RUNS")
+aria_cbc_192_ORIGINAL=$(bc -l <<< "$aria_cbc_192_ORIGINAL / $RUNS")
+aria_cbc_192_VECTORIZED=$(bc -l <<< "$aria_cbc_192_VECTORIZED / $RUNS")
+aria_cbc_256_ORIGINAL=$(bc -l <<< "$aria_cbc_256_ORIGINAL / $RUNS")
+aria_cbc_256_VECTORIZED=$(bc -l <<< "$aria_cbc_256_VECTORIZED / $RUNS")
 
-aes_xts_128_ORIGINAL=$(echo "$aes_xts_ORIGINAL" | grep 'AES-XTS-128' | tr -s ' ' | cut -d ' ' -f 4)
-aes_xts_128_VECTORIZED=$(echo "$aes_xts_VECTORIZED" | grep 'AES-XTS-128' | tr -s ' ' | cut -d ' ' -f 4)
-
-aes_xts_256_ORIGINAL=$(echo "$aes_xts_ORIGINAL" | grep 'AES-XTS-256' | tr -s ' ' | cut -d ' ' -f 4)
-aes_xts_256_VECTORIZED=$(echo "$aes_xts_VECTORIZED" | grep 'AES-XTS-256' | tr -s ' ' | cut -d ' ' -f 4)
-
-#--------------------------------------------------------------------------------
-
-aes_cbc_128_ORIGINAL=$(echo "$aes_cbc_ORIGINAL" | grep 'AES-CBC-128' | tr -s ' ' | cut -d ' ' -f 4)
-aes_cbc_128_VECTORIZED=$(echo "$aes_cbc_VECTORIZED" | grep 'AES-CBC-128' | tr -s ' ' | cut -d ' ' -f 4)
-
-aes_cbc_192_ORIGINAL=$(echo "$aes_cbc_ORIGINAL" | grep 'AES-CBC-192' | tr -s ' ' | cut -d ' ' -f 4)
-aes_cbc_192_VECTORIZED=$(echo "$aes_cbc_VECTORIZED" | grep 'AES-CBC-192' | tr -s ' ' | cut -d ' ' -f 4)
-
-aes_cbc_256_ORIGINAL=$(echo "$aes_cbc_ORIGINAL" | grep 'AES-CBC-256' | tr -s ' ' | cut -d ' ' -f 4)
-aes_cbc_256_VECTORIZED=$(echo "$aes_cbc_VECTORIZED" | grep 'AES-CBC-256' | tr -s ' ' | cut -d ' ' -f 4)
-
-#--------------------------------------------------------------------------------
-
-aes_cmac_128_ORIGINAL=$(echo "$aes_cmac_ORIGINAL" | grep 'AES-CMAC-128' | tr -s ' ' | cut -d ' ' -f 4)
-aes_cmac_128_VECTORIZED=$(echo "$aes_cmac_VECTORIZED" | grep 'AES-CMAC-128' | tr -s ' ' | cut -d ' ' -f 4)
-
-aes_cmac_192_ORIGINAL=$(echo "$aes_cmac_ORIGINAL" | grep 'AES-CMAC-192' | tr -s ' ' | cut -d ' ' -f 4)
-aes_cmac_192_VECTORIZED=$(echo "$aes_cmac_VECTORIZED" | grep 'AES-CMAC-192' | tr -s ' ' | cut -d ' ' -f 4)
-
-aes_cmac_256_ORIGINAL=$(echo "$aes_cmac_ORIGINAL" | grep 'AES-CMAC-256' | tr -s ' ' | cut -d ' ' -f 4)
-aes_cmac_256_VECTORIZED=$(echo "$aes_cmac_VECTORIZED" | grep 'AES-CMAC-256' | tr -s ' ' | cut -d ' ' -f 4)
-
-aes_cmac_PRF_128_ORIGINAL=$(echo "$aes_cmac_ORIGINAL" | grep 'AES-CMAC-PRF-128' | tr -s ' ' | cut -d ' ' -f 4)
-aes_cmac_PRF_128_VECTORIZED=$(echo "$aes_cmac_VECTORIZED" | grep 'AES-CMAC-PRF-128' | tr -s ' ' | cut -d ' ' -f 4)
-
-#--------------------------------------------------------------------------------
-
-aria_cbc_128_ORIGINAL=$(echo "$aria_cbc_ORIGINAL" | grep 'ARIA-CBC-128' | tr -s ' ' | cut -d ' ' -f 4)
-aria_cbc_128_VECTORIZED=$(echo "$aria_cbc_VECTORIZED" | grep 'ARIA-CBC-128' | tr -s ' ' | cut -d ' ' -f 4)
-
-aria_cbc_192_ORIGINAL=$(echo "$aria_cbc_ORIGINAL" | grep 'ARIA-CBC-192' | tr -s ' ' | cut -d ' ' -f 4)
-aria_cbc_192_VECTORIZED=$(echo "$aria_cbc_VECTORIZED" | grep 'ARIA-CBC-192' | tr -s ' ' | cut -d ' ' -f 4)
-
-aria_cbc_256_ORIGINAL=$(echo "$aria_cbc_ORIGINAL" | grep 'ARIA-CBC-256' | tr -s ' ' | cut -d ' ' -f 4)
-aria_cbc_256_VECTORIZED=$(echo "$aria_cbc_VECTORIZED" | grep 'ARIA-CBC-256' | tr -s ' ' | cut -d ' ' -f 4)
-
-#--------------------------------------------------------------------------------
+printf "\n"
+printf "Benchmarking setup:\n"
+printf " - $RUNS_WARMUP warmup runs\n"
+printf " - $RUNS runs\n"
 
 SEPARATOR="                    "
 printRow() { # Params: Code, Serial, Multi
     local SPEEDUP=$(bc -l <<< "(($3-$2)/$2)*100")
     local i="$1"
-    local j="$2 KiB/s"
-    local k="$3 KiB/s"
+    local j="%.f KiB/s"
+    local k="%.f KiB/s"
     local l="%.2f%%"
-    LC_NUMERIC="en_US.UTF-8" printf "$i${SEPARATOR:1:20-${#i}}$j${SEPARATOR:1:20-${#j}}$k${SEPARATOR:1:20-${#k}}$l${SEPARATOR:1:20-${#l}}\n" $SPEEDUP
+    LC_NUMERIC="en_US.UTF-8" printf "$i${SEPARATOR:1:20-${#i}}$j${SEPARATOR:1:17-${#j}}$k${SEPARATOR:1:17-${#k}}$l${SEPARATOR:1:20-${#l}}\n" $2 $3 $SPEEDUP
 }
 i="Algorithm"
 j="Original"
