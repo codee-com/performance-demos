@@ -13,7 +13,12 @@ This is the recommended way to get started with Codee. It takes advantage of Cod
 Just follow these simple steps on your computer:
 * First, clone this repository as usual.
 * Second, run the 7-step script [`benchmark-mbedTLS-vector.sh`](benchmark-mbedTLS-vector.sh), to measure the performance gain using OpenMP vectorization on your CPU.
-  * To run the script, it is necessary to have this software installed in the system: `git`, `cmake`, `ninja`, `printf`.
+  * The script support multiple setups using environment variables:
+    * Use `$CC` to set the desired compiler
+    * Use `$CODEE_FLAGS` if you need extra codee flags (i.e:--force-target-compiler)
+    * Use `$RUNS_WARMUP` to set the number of warm up runs for each algorithm (default to 0)
+    * Use `$RUNS` to set the number of effective runs for each project (default to 2)
+  * To run the script, it is necessary to have this software installed in the system: compilers `gcc`, `clang` or `icc` to build OpenMP SIMD, `git`, `cmake`, `ninja` or `makefile`, `printf` to run and benchmark the example codes.
   * The script handles the download of MbedTLS 3.1.0 (a internet connection is required to download MbedTLS for the first time).
   * A valid Codee license and package is required. Please, [`contact us at codee.com`](https://www.codee.com/contact-us/).
 * Third, take a look at the information displayed in the screen, as the script invokes Codee to get an screening report of the project, uses Codee’s “auto” mode to annotate the source code with compiler pragmas and verifies the correctness and speedup of the auto-generated optimized code.
@@ -21,7 +26,7 @@ Just follow these simple steps on your computer:
 The following output corresponds to an execution on a laptop running Ubuntu 21.04 and equipped with an AMD Ryzen 4800H CPU and 16 GBs of RAM, using gcc 10.3:
 
 ```
-$ ./benchmark-mbedTLS-vector.sh
+$ CC=gcc-9 RUNS_WARMUP=0 RUNS=1 ./benchmark-mbedTLS-vector.sh
 ...
 Algorithm           Original            Optimized           Speedup             
 ================    ============        ============        =======             
@@ -53,13 +58,18 @@ Codee also provides capabilities to take advantage of multi-threading in modern 
 Just follow these simple steps on your computer:
 * First, clone this repository as usual.
 * Second, run the `benchmark-omp-multi.sh` script to measure performance gain using OpenMP multi-threading on your CPU.
-  * To run the script, it is necessary to have this software installed in the system: compilers `gcc` or `clang` to build OpenMP multi-threading versions; `unzip` or `sed` to run and benchmark the example codes.
+  * The script support multiple setups using environment variables:
+    * Use `$CC` to set the desired compiler
+    * Use `$CODEE_FLAGS` if you need extra codee flags (i.e:--force-target-compiler)
+    * Use `$RUNS_WARMUP` to set the number of warm up runs for each project (default to 0)
+    * Use `$RUNS` to set the number of effective runs for each project (default to 2)
+  * To run the script, it is necessary to have this software installed in the system: compilers `gcc`, `clang` or `icc` to build OpenMP multi-threading versions; `unzip`, `sed`, `git`, `cmake`, `ninja` or `makefile`, `printf` to run and benchmark the example codes.
   * A valid Codee license and package is required. Please, [`contact us at codee.com`](https://www.codee.com/contact-us/).
 
 The following output corresponds to an execution on a laptop running Ubuntu 21.04 and equipped with an AMD Ryzen 4800H CPU and 16 GBs of RAM:
 
 ```
-$ ./benchmark-omp-multi.sh
+$ CC=gcc-9 RUNS_WARMUP=0 RUNS=1 ./benchmark-omp-multi.sh
 ...
 Code           	Original    Optimized    Speedup
 ===============	========    =========    ==============
