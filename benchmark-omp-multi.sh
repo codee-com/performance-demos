@@ -1,7 +1,7 @@
 #!/bin/bash -e
 # This script builds and runs the serial and OpenMP multi-threaded versions of the codes
 # gathering runtimes and printing a table with the corresponding speedups.
-# Either gcc or clang can be used to build; it can chosen through the CC variable.
+# Either gcc, clang or icc can be used to build; it can chosen through the CC variable.
 
 function printRunComm(){
     ## Print the command    
@@ -10,10 +10,48 @@ function printRunComm(){
     $@
 }
 
+# Variables configuration
+# Num warmup runs
+if [ -z "$RUNS_WARMUP" ]; then
+  RUNS_WARMUP=0
+fi  
+# Num runs
+if [ -z "$RUNS" ]; then
+  RUNS=2
+fi
+
+# This function runs $RUNS_WARMUP warm up runs and $RUNS effective runs of the given command ($1)
+# Returns the average time of the effective runs
+function multipleRuns(){
+    local sum=0
+    local aux=""
+    local avg=0
+    for (( i=1; i<=$RUNS_WARMUP; i++ )); do
+        $(eval $1)
+    done
+    for (( i=1; i<=$RUNS; i++ )); do
+        aux="$(eval $1)"
+        sum="$(bc -l <<< "$sum + $aux")"
+    done
+    avg=$(bc -l <<< "$sum / $RUNS")
+    echo "$avg"
+}
+
 # Check that all required commands are available
-for cmd in ${CC:-cc} cmake exec printf ninja grep cut tr bc pwdirectives unzip; do
+for cmd in ${CC:-cc} cmake exec printf grep cut tr bc pwdirectives unzip sed; do
     command -v $cmd >/dev/null 2>&1 || { printf >&2 "$cmd is required but it's not installed. Aborting.\n"; exit 1; }
 done
+
+if command -v ninja --version >/dev/null 2>/dev/null ; then
+    GENERATOR_="Ninja"
+    CALL_GENERATOR="ninja"
+else if command -v make --version >/dev/null 2>/dev/null ; then
+        GENERATOR_="Unix Makefiles"
+        CALL_GENERATOR="make"
+    else 
+        printf "Ninja or Makefile is required but it's not installed. Aborting.\n"; exit 1;
+    fi
+fi
 
 # Set locate for decimal point separator and disable stderr output to filter out compiler warnings
 export LC_NUMERIC="en_US.UTF-8"
@@ -36,7 +74,7 @@ printf "##################################################\n"
 rm -rf ATMUX/serial/build ATMUX/serial/buildOmp
 git checkout -- ATMUX/serial/atmux.c
 # CANNY
-rm -rf CANNY/serial/build CANNY/serial/buildOmp
+rm -rf CANNY/serial/build CANNY/serial/buildOmp CANNY/serial/testvecs/
 git checkout -- CANNY/serial/canny.c
 # COULOMB
 rm -rf COULOMB/serial/build COULOMB/serial/buildOmp
@@ -69,15 +107,15 @@ mkdir build
   -DCMAKE_C_COMPILER=${CC:-cc} \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
-  -G Ninja
+  -G "$GENERATOR_"
 
-  ninja
+  $CALL_GENERATOR
 )
 
-printf "\nStep 2: Optimizing code with multithreading ..... done\n"
+printf "\nStep 2: Optimizing code with multithreading\n"
 
 printRunComm "pwdirectives --omp multi --explicit-privatization y atmux.c:atmux:22:5 \
- --config build/compile_commands.json -i --brief"
+ --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 sed -i 's/\/\* y start \*\//0/g' "atmux.c"
 sed -i 's/\/\* y length \*\//n/g' "atmux.c"
 
@@ -89,17 +127,18 @@ mkdir buildOmp
   -DCMAKE_C_COMPILER=${CC:-cc} \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
-  -G Ninja
+  -G "$GENERATOR_"
 
-  ninja
+  $CALL_GENERATOR
 )
 
 printf "\nStep 3: Executing serial code ..................."
-ATMUX_SERIAL=$(build/atmux 10000 | grep "time (s)=" | cut -b 11-)
+# multipleRuns "build/atmux 10000 | grep \"time (s)=\" | cut -b 11-"
+ATMUX_SERIAL=$(multipleRuns "build/atmux 10000 | grep \"time (s)=\" | cut -b 11-")
 printf " done"
 
 printf "\nStep 4: Executing optimized code ................"
-ATMUX_OMP_MULTI=$(buildOmp/atmux 10000 | grep "time (s)=" | cut -b 11-)
+ATMUX_OMP_MULTI=$(multipleRuns "buildOmp/atmux 10000 | grep \"time (s)=\" | cut -b 11-")
 printf " done\n\n\n"
 
 cd ../..
@@ -119,18 +158,18 @@ mkdir build
   -DCMAKE_C_COMPILER=${CC:-cc} \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
-  -G Ninja
+  -G "$GENERATOR_"
 
-  ninja
+  $CALL_GENERATOR
 )
 
-printf "\nStep 2: Optimizing code with multithreading ..... done\n"
+printf "\nStep 2: Optimizing code with multithreading\n"
 
 printRunComm "pwdirectives --omp multi canny.c:gaussian_smooth:492:4 \
- --config build/compile_commands.json -i --brief"
+ --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 
 printRunComm "pwdirectives --omp multi canny.c:gaussian_smooth:474:4 \
- --config build/compile_commands.json -i --brief"
+ --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
 mkdir buildOmp
@@ -140,17 +179,17 @@ mkdir buildOmp
   -DCMAKE_C_COMPILER=${CC:-cc} \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
-  -G Ninja
+  -G "$GENERATOR_"
 
-  ninja
+  $CALL_GENERATOR
 )
 
 printf "\nStep 3: Executing serial code ..................."
-CANNY_SERIAL=$(build/canny testvecs/input/15360_8640.pgm 0.5 0.7 0.9 | grep "Total time:" | cut -b 13-)
+CANNY_SERIAL=$(multipleRuns "build/canny testvecs/input/15360_8640.pgm 0.5 0.7 0.9 | grep \"Total time:\" | cut -b 13-")
 printf " done"
 
 printf "\nStep 4: Executing optimized code ................"
-CANNY_OMP_MULTI=$(buildOmp/canny testvecs/input/15360_8640.pgm 0.5 0.7 0.9 | grep "Total time:" | cut -b 13-)
+CANNY_OMP_MULTI=$(multipleRuns "buildOmp/canny testvecs/input/15360_8640.pgm 0.5 0.7 0.9 | grep \"Total time:\" | cut -b 13-")
 printf " done\n\n\n"
 
 cd ../..
@@ -169,15 +208,15 @@ mkdir build
   -DCMAKE_C_COMPILER=${CC:-cc} \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
-  -G Ninja
+  -G "$GENERATOR_"
 
-  ninja
+  $CALL_GENERATOR
 )
 
-printf "\nStep 2: Optimizing code with multithreading ..... done\n"
+printf "\nStep 2: Optimizing code with multithreading\n"
 
 printRunComm "pwdirectives --omp multi coulomb.c:coulomb:26:2 \
- --config build/compile_commands.json -i --brief"
+ --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
 mkdir buildOmp
@@ -187,17 +226,17 @@ mkdir buildOmp
   -DCMAKE_C_COMPILER=${CC:-cc} \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
-  -G Ninja
+  -G "$GENERATOR_"
 
-  ninja
+  $CALL_GENERATOR
 )
 
 printf "\nStep 3: Executing serial code ..................."
-COULOMB_SERIAL=$(build/coulomb 400 | grep "time (s)=" | cut -b 11-)
+COULOMB_SERIAL=$(multipleRuns "build/coulomb 400 | grep \"time (s)=\" | cut -b 11-")
 printf " done"
 
 printf "\nStep 4: Executing optimized code ................"
-COULOMB_OMP_MULTI=$(buildOmp/coulomb 400 | grep "time (s)=" | cut -b 11-)
+COULOMB_OMP_MULTI=$(multipleRuns "buildOmp/coulomb 400 | grep \"time (s)=\" | cut -b 11-")
 printf " done\n\n\n"
 
 cd ../..
@@ -216,15 +255,15 @@ mkdir build
   -DCMAKE_C_COMPILER=${CC:-cc} \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
-  -G Ninja
+  -G "$GENERATOR_"
 
-  ninja
+  $CALL_GENERATOR
 )
 
-printf "\nStep 2: Optimizing code with multithreading ..... done\n"
+printf "\nStep 2: Optimizing code with multithreading\n"
 
 printRunComm "pwdirectives --omp multi --config pw.json main.c:main:132:7 \
- --target-compiler-cc ${CC:-cc} -i --brief"
+ --target-compiler-cc ${CC:-cc} -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
 mkdir buildOmp
@@ -234,17 +273,17 @@ mkdir buildOmp
   -DCMAKE_C_COMPILER=${CC:-cc} \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
-  -G Ninja
+  -G "$GENERATOR_"
 
-  ninja
+  $CALL_GENERATOR
 )
 
 printf "\nStep 3: Executing serial code ..................."
-HACC_SERIAL=$(build/main | grep "Kernel elapsed time, s:" | tr -s ' ' | cut -d ' ' -f 5)
+HACC_SERIAL=$(multipleRuns "build/main | grep \"Kernel elapsed time, s:\" | tr -s ' ' | cut -d ' ' -f 5")
 printf " done"
 
 printf "\nStep 4: Executing optimized code ................"
-HACC_OMP_MULTI=$(buildOmp/main | grep "Kernel elapsed time, s:" | tr -s ' ' | cut -d ' ' -f 5)
+HACC_OMP_MULTI=$(multipleRuns "buildOmp/main | grep \"Kernel elapsed time, s:\" | tr -s ' ' | cut -d ' ' -f 5")
 printf " done\n\n\n"
 
 cd ../..
@@ -263,15 +302,15 @@ mkdir build
   -DCMAKE_C_COMPILER=${CC:-cc} \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
-  -G Ninja
+  -G "$GENERATOR_"
 
-  ninja
+  $CALL_GENERATOR
 )
 
-printf "\nStep 2: Optimizing code with multithreading ..... done\n"
+printf "\nStep 2: Optimizing code with multithreading\n"
 
 printRunComm "pwdirectives --omp multi main.c:matmul:15:5 \
- --config build/compile_commands.json -i --brief"
+ --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
 mkdir buildOmp
@@ -281,17 +320,17 @@ mkdir buildOmp
   -DCMAKE_C_COMPILER=${CC:-cc} \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
-  -G Ninja
+  -G "$GENERATOR_"
 
-  ninja
+  $CALL_GENERATOR
 )
 
 printf "\nStep 3: Executing serial code ..................."
-MATMUL_SERIAL=$(build/matmul 1500 | grep "time (s)=" | cut -b 11-)
+MATMUL_SERIAL=$(multipleRuns "build/matmul 1500 | grep \"time (s)=\" | cut -b 11-")
 printf " done"
 
 printf "\nStep 4: Executing optimized code ................"
-MATMUL_OMP_MULTI=$(buildOmp/matmul 1500 | grep "time (s)=" | cut -b 11-)
+MATMUL_OMP_MULTI=$(multipleRuns "buildOmp/matmul 1500 | grep \"time (s)=\" | cut -b 11-")
 printf " done\n\n\n"
 
 cd ../..
@@ -310,15 +349,15 @@ mkdir build
   -DCMAKE_C_COMPILER=${CC:-cc} \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
-  -G Ninja
+  -G "$GENERATOR_"
 
-  ninja
+  $CALL_GENERATOR
 )
 
-printf "\nStep 2: Optimizing code with multithreading ..... done\n"
+printf "\nStep 2: Optimizing code with multithreading\n"
 
 printRunComm "pwdirectives --omp multi CG/cg.c:conj_grad:458:5 \
-  --config build/compile_commands.json -i --brief"
+  --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
 mkdir buildOmp
@@ -328,17 +367,17 @@ mkdir buildOmp
   -DCMAKE_C_COMPILER=${CC:-cc} \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
-  -G Ninja
+  -G "$GENERATOR_"
 
-  ninja
+  $CALL_GENERATOR
 )
 
 printf "\nStep 3: Executing serial code ..................."
-NPB_CG_SERIAL=$(build/bin/cg.B.x | grep "Time in seconds" | tr -s ' ' | cut -d ' ' -f 6)
+NPB_CG_SERIAL=$(multipleRuns "build/bin/cg.B.x | grep \"Time in seconds\" | tr -s ' ' | cut -d ' ' -f 6")
 printf " done"
 
 printf "\nStep 4: Executing optimized code ................"
-NPB_CG_OMP_MULTI=$(buildOmp/bin/cg.B.x | grep "Time in seconds" | tr -s ' ' | cut -d ' ' -f 6)
+NPB_CG_OMP_MULTI=$(multipleRuns "buildOmp/bin/cg.B.x | grep \"Time in seconds\" | tr -s ' ' | cut -d ' ' -f 6")
 printf " done\n\n\n"
 
 cd ../..
@@ -357,15 +396,15 @@ mkdir build
   -DCMAKE_C_COMPILER=${CC:-cc} \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
-  -G Ninja
+  -G "$GENERATOR_"
 
-  ninja
+  $CALL_GENERATOR
 )
 
-printf "\nStep 2: Optimizing code with multithreading ..... done\n"
+printf "\nStep 2: Optimizing code with multithreading\n"
 
 printRunComm "pwdirectives --omp multi pi.c:main:31:5 \
- --config build/compile_commands.json -i --brief"
+ --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
 mkdir buildOmp
@@ -375,17 +414,17 @@ mkdir buildOmp
   -DCMAKE_C_COMPILER=${CC:-cc} \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
-  -G Ninja
+  -G "$GENERATOR_"
 
-  ninja
+  $CALL_GENERATOR
 )
 
 printf "\nStep 3: Executing serial code ..................."
-PI_SERIAL=$(build/pi 1000000000 | grep "time (s)=" | cut -b 11-)
+PI_SERIAL=$(multipleRuns "build/pi 1000000000 | grep \"time (s)=\" | cut -b 11-")
 printf " done"
 
 printf "\nStep 4: Executing optimized code ................"
-PI_OMP_MULTI=$(buildOmp/pi 1000000000 | grep "time (s)=" | cut -b 11-)
+PI_OMP_MULTI=$(multipleRuns "buildOmp/pi 1000000000 | grep \"time (s)=\" | cut -b 11-")
 printf " done\n\n\n"
 
 cd ../..
@@ -393,7 +432,10 @@ cd ../..
 printf "##################################################\n"
 printf "Benchmarking optimized codes\n"
 printf "##################################################\n"
-
+printf "\n"
+printf "Benchmarking setup:\n"
+printf " - $RUNS_WARMUP warmup runs\n"
+printf " - $RUNS runs\n"
 
 printf "\nCode           \tOriginal \tOptimized  \tSpeedup\n"
 printf "===============\t========\t=========\t==============\n"
