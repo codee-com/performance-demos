@@ -138,7 +138,7 @@ read -p "Press enter to continue"
 printf "\n"
 
 tScreening0=$(date +%s%3N)
-printRunComm "pwreport --screening --level 1 --config build/compile_commands.json --show-progress $CODEE_FLAGS"
+printRunComm "pwreport --screening --config build/compile_commands.json --show-progress $CODEE_FLAGS"
 tScreening1=$(date +%s%3N)
 
 #===============================================================================
