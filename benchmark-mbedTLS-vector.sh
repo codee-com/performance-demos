@@ -21,7 +21,7 @@ if command -v ninja --version >/dev/null 2>/dev/null ; then
 else if command -v make --version >/dev/null 2>/dev/null ; then
         GENERATOR_="Unix Makefiles"
         CALL_GENERATOR="make"
-    else 
+    else
         printf "Ninja or Makefile is required but it's not installed. Aborting.\n"; exit 1;
     fi
 fi
@@ -49,7 +49,7 @@ fi
 # Num warmup runs
 if [ -z "$RUNS_WARMUP" ]; then
   RUNS_WARMUP=0
-fi  
+fi
 # Num runs
 if [ -z "$RUNS" ]; then
   RUNS=2
@@ -60,7 +60,7 @@ fi
 ${CC:-cc} --version
 
 # Compiler_flags
-IS_ICC=$(${CC:-cc} --version 2> /dev/null | grep 'icc' || true)
+IS_ICC=$(${CC:-cc} --version 2> /dev/null | grep 'Intel' || true)
 if [ -z "$IS_ICC" ]; then
     EXTRA_FLAGS="$CFLAGS -fopenmp-simd"
 else
@@ -155,26 +155,26 @@ printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 tBuild2=$(date +%s%3N)
 
-printRunComm "pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_xts --brief $CODEE_FLAGS"
+printRunComm "pwdirectives --auto --vector omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_xts --brief $CODEE_FLAGS"
 
 printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "aes_cbc algorithm\n"
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 
-printRunComm "pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_cbc --brief $CODEE_FLAGS"
+printRunComm "pwdirectives --auto --vector omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_cbc --brief $CODEE_FLAGS"
 
 
 printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "cmac algorithm\n"
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 
-printRunComm "pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/cmac.c:cmac_xor_block --brief $CODEE_FLAGS"
+printRunComm "pwdirectives --auto --vector omp --in-place --config build/compile_commands.json library/cmac.c:cmac_xor_block --brief $CODEE_FLAGS"
 
 printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "cbc algorithm\n"
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 
-printRunComm "pwdirectives --auto --simd omp --in-place --config build/compile_commands.json library/aria.c:mbedtls_aria_crypt_cbc --brief $CODEE_FLAGS"
+printRunComm "pwdirectives --auto --vector omp --in-place --config build/compile_commands.json library/aria.c:mbedtls_aria_crypt_cbc --brief $CODEE_FLAGS"
 
 tBuild3=$(date +%s%3N)
 
@@ -435,7 +435,7 @@ do
     aria_cbc_192_VECTORIZED=$(bc -l <<< "$aria_cbc_192_VECTORIZED + ${aria_cbc_192_VECTORIZED_A[$i]}")
     aria_cbc_256_ORIGINAL=$(bc -l <<< "$aria_cbc_256_ORIGINAL + ${aria_cbc_256_ORIGINAL_A[$i]}")
     aria_cbc_256_VECTORIZED=$(bc -l <<< "$aria_cbc_256_VECTORIZED + ${aria_cbc_256_VECTORIZED_A[$i]}")
-done 
+done
 aes_xts_128_ORIGINAL=$(bc -l <<< "$aes_xts_128_ORIGINAL / $RUNS")
 aes_xts_128_VECTORIZED=$(bc -l <<< "$aes_xts_128_VECTORIZED / $RUNS")
 aes_xts_256_ORIGINAL=$(bc -l <<< "$aes_xts_256_ORIGINAL / $RUNS")
@@ -475,7 +475,7 @@ printRow() { # Params: Code, Serial, Multi
     local l="%.2f%%"
     LC_NUMERIC="en_US.UTF-8" printf "$i${SEPARATOR:1:20-${#i}}$j${SEPARATOR:1:17-${#j}}$k${SEPARATOR:1:17-${#k}}$l${SEPARATOR:1:20-${#l}}\n" $2 $3 $SPEEDUP
 }
-i="Algorithm"
+i="Code"
 j="Original"
 k="Optimized"
 l="Speedup"

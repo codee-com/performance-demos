@@ -4,7 +4,7 @@
 # Either gcc, clang or icc can be used to build; it can chosen through the CC variable.
 
 function printRunComm(){
-    ## Print the command    
+    ## Print the command
     printf "\n$ $@\n"
     ## Run the command
     $@
@@ -14,7 +14,7 @@ function printRunComm(){
 # Num warmup runs
 if [ -z "$RUNS_WARMUP" ]; then
   RUNS_WARMUP=0
-fi  
+fi
 # Num runs
 if [ -z "$RUNS" ]; then
   RUNS=2
@@ -48,7 +48,7 @@ if command -v ninja --version >/dev/null 2>/dev/null ; then
 else if command -v make --version >/dev/null 2>/dev/null ; then
         GENERATOR_="Unix Makefiles"
         CALL_GENERATOR="make"
-    else 
+    else
         printf "Ninja or Makefile is required but it's not installed. Aborting.\n"; exit 1;
     fi
 fi
@@ -98,7 +98,7 @@ printf "##################################################\n"
 printf "Executing 1/7: ATMUX... \n"
 printf "##################################################\n"
 
-cd ATMUX/serial 
+cd ATMUX/serial
 printf "\nStep 1: Compiling serial code\n"
 mkdir build
 (
@@ -114,7 +114,7 @@ mkdir build
 
 printf "\nStep 2: Optimizing code with multithreading\n"
 
-printRunComm "pwdirectives --omp multi --explicit-privatization y atmux.c:atmux:22:5 \
+printRunComm "pwdirectives --multi omp-for --explicit-privatization y atmux.c:22:5 \
  --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 sed -i 's/\/\* y start \*\//0/g' "atmux.c"
 sed -i 's/\/\* y length \*\//n/g' "atmux.c"
@@ -148,7 +148,7 @@ printf "##################################################\n"
 printf "Executing 2/7: CANNY... \n"
 printf "##################################################\n"
 
-cd CANNY/serial 
+cd CANNY/serial
 unzip -u ../15360_8640.zip
 printf "\nStep 1: Compiling serial code\n"
 mkdir build
@@ -165,10 +165,7 @@ mkdir build
 
 printf "\nStep 2: Optimizing code with multithreading\n"
 
-printRunComm "pwdirectives --omp multi canny.c:gaussian_smooth:492:4 \
- --config build/compile_commands.json -i --brief $CODEE_FLAGS"
-
-printRunComm "pwdirectives --omp multi canny.c:gaussian_smooth:474:4 \
+printRunComm "pwdirectives --multi omp-for canny.c:474:4,492:4 \
  --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
@@ -199,7 +196,7 @@ printf "##################################################\n"
 printf "Executing 3/7: COULOMB... \n"
 printf "##################################################\n"
 
-cd COULOMB/serial 
+cd COULOMB/serial
 printf "\nStep 1: Compiling serial code\n"
 mkdir build
 (
@@ -215,7 +212,7 @@ mkdir build
 
 printf "\nStep 2: Optimizing code with multithreading\n"
 
-printRunComm "pwdirectives --omp multi coulomb.c:coulomb:26:2 \
+printRunComm "pwdirectives --multi omp-for coulomb.c:26:2 \
  --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
@@ -246,7 +243,7 @@ printf "##################################################\n"
 printf "Executing 4/7: HACCmk... \n"
 printf "##################################################\n"
 
-cd HACCmk/serial 
+cd HACCmk/serial
 printf "\nStep 1: Compiling serial code\n"
 mkdir build
 (
@@ -262,7 +259,7 @@ mkdir build
 
 printf "\nStep 2: Optimizing code with multithreading\n"
 
-printRunComm "pwdirectives --omp multi --config pw.json main.c:main:132:7 \
+printRunComm "pwdirectives --multi omp-for --config pw.json main.c:132:7 \
  --target-compiler-cc ${CC:-cc} -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
@@ -293,7 +290,7 @@ printf "##################################################\n"
 printf "Executing 5/7: MATMUL... \n"
 printf "##################################################\n"
 
-cd MATMUL/serial 
+cd MATMUL/serial
 printf "\nStep 1: Compiling serial code\n"
 mkdir build
 (
@@ -309,7 +306,7 @@ mkdir build
 
 printf "\nStep 2: Optimizing code with multithreading\n"
 
-printRunComm "pwdirectives --omp multi main.c:matmul:15:5 \
+printRunComm "pwdirectives --multi omp-for main.c:15:5 \
  --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
@@ -340,7 +337,7 @@ printf "##################################################\n"
 printf "Executing 6/7: NPB_CG... \n"
 printf "##################################################\n"
 
-cd NPB_CG/serial 
+cd NPB_CG/serial
 printf "\nStep 1: Compiling serial code\n"
 mkdir build
 (
@@ -356,7 +353,7 @@ mkdir build
 
 printf "\nStep 2: Optimizing code with multithreading\n"
 
-printRunComm "pwdirectives --omp multi CG/cg.c:conj_grad:458:5 \
+printRunComm "pwdirectives --multi omp-for CG/cg.c:458:5 \
   --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
@@ -387,7 +384,7 @@ printf "##################################################\n"
 printf "Executing 7/7: PI... \n"
 printf "##################################################\n"
 
-cd PI/serial 
+cd PI/serial
 printf "\nStep 1: Compiling serial code\n"
 mkdir build
 (
@@ -403,7 +400,7 @@ mkdir build
 
 printf "\nStep 2: Optimizing code with multithreading\n"
 
-printRunComm "pwdirectives --omp multi pi.c:main:31:5 \
+printRunComm "pwdirectives --multi omp-for pi.c:31:5 \
  --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
