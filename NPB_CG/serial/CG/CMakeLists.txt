@@ -15,6 +15,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -parallel ${OpenMP_C_FLAGS} -mcmodel=medium")
     set_source_files_properties(${BENCHMARK}.c PROPERTIES COMPILE_FLAGS "-I${COMMON} -g -Wall -O3 ${OpenMP_C_FLAGS} -mcmodel=medium")
+# Intel icx
+elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "IntelLLVM")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 ${OpenMP_C_FLAGS} -mcmodel=medium")
+    set_source_files_properties(${BENCHMARK}.c PROPERTIES COMPILE_FLAGS "-I${COMMON} -g -Wall -O3 ${OpenMP_C_FLAGS} -mcmodel=medium")
 # GNU gcc
 elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 ${OpenMP_C_FLAGS} -mcmodel=medium")
@@ -24,7 +28,7 @@ elseif("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
   if (${CMAKE_C_COMPILER_FRONTEND_VARIANT} STREQUAL "MSVC")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /O2 ${OpenMP_C_FLAGS}")
     set_source_files_properties(${BENCHMARK}.c PROPERTIES COMPILE_FLAGS "/I${COMMON} /O2 ${OpenMP_C_FLAGS} /W3")
-# LLVM clang    
+# LLVM clang
     elseif (${CMAKE_C_COMPILER_FRONTEND_VARIANT} STREQUAL "GNU")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 ${OpenMP_C_FLAGS} -mcmodel=medium")
         set_source_files_properties(${BENCHMARK}.c PROPERTIES COMPILE_FLAGS "-I${COMMON} -g -Wall -O3 ${OpenMP_C_FLAGS} -mcmodel=medium")
@@ -33,6 +37,12 @@ elseif("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
 elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /O2 ${OpenMP_C_FLAGS} /Qpar")
     set_source_files_properties(${BENCHMARK}.c PROPERTIES COMPILE_FLAGS "/I${COMMON} /O2 ${OpenMP_C_FLAGS} /Qpar /W3")
+# Other compilers
+else()
+    message("** Warning, compiler '${CMAKE_C_COMPILER_ID}' is not covered.")
+    message("** It is possible that the flags are not the correct ones")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 ${OpenMP_C_FLAGS} -mcmodel=medium")
+    set_source_files_properties(${BENCHMARK}.c PROPERTIES COMPILE_FLAGS "-I${COMMON} -g -Wall -O3 ${OpenMP_C_FLAGS} -mcmodel=medium")
 endif()
 
 configure_file(${config}/make.def ${config_bin}/make.def COPYONLY)

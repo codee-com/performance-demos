@@ -44,10 +44,10 @@ done
 
 if command -v ninja --version >/dev/null 2>/dev/null ; then
     GENERATOR_="Ninja"
-    CALL_GENERATOR="ninja"
+    CALL_GENERATOR="ninja -v"
 else if command -v make --version >/dev/null 2>/dev/null ; then
         GENERATOR_="Unix Makefiles"
-        CALL_GENERATOR="make"
+        CALL_GENERATOR="make VERBOSE=true"
     else
         printf "Ninja or Makefile is required but it's not installed. Aborting.\n"; exit 1;
     fi
@@ -70,18 +70,6 @@ if command -v ${CC:-cc} &> /dev/null; then
 else
   CODEE_FLAGS="$CODEE_FLAGS --no-target-compilers"
 fi
-# pwreport --check-install --target-compiler-cc ${CC:-cc}
-# Verifying License                   [  OK  ]
-# Finding C compatible compiler       [  OK  ]
-# Finding C++ compatible compiler     [ SKIP ]
-# Finding Fortran compatible compiler [ SKIP ]
-# Testing C screening report          [  OK  ]
-# Testing C++ screening report        [  OK  ]
-# Testing Fortran screening report    [  OK  ]
-# Testing C Codee AUTO mode           [  OK  ]
-# Testing C++ Codee AUTO mode         [ SKIP ]
-# Testing Fortran Codee AUTO mode     [ SKIP ]
-
 printf "\n"
 
 printf "##################################################\n"
@@ -113,6 +101,7 @@ if command -v ${CC:-cc} &> /dev/null; then
     cmake \
     -DCMAKE_C_COMPILER=${CC:-cc} \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -DCMAKE_BUILD_TYPE=Release \
     -H. ../ \
     -G "$GENERATOR_"
 
@@ -136,6 +125,7 @@ if command -v ${CC:-cc} &> /dev/null; then
     cmake \
     -DCMAKE_C_COMPILER=${CC:-cc} \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -DCMAKE_BUILD_TYPE=Release \
     -H. ../ \
     -G "$GENERATOR_"
 

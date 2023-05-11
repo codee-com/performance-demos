@@ -44,10 +44,10 @@ done
 
 if command -v ninja --version >/dev/null 2>/dev/null ; then
     GENERATOR_="Ninja"
-    CALL_GENERATOR="ninja"
+    CALL_GENERATOR="ninja -v"
 else if command -v make --version >/dev/null 2>/dev/null ; then
         GENERATOR_="Unix Makefiles"
-        CALL_GENERATOR="make"
+        CALL_GENERATOR="make VERBOSE=true"
     else
         printf "Ninja or Makefile is required but it's not installed. Aborting.\n"; exit 1;
     fi
@@ -105,6 +105,7 @@ mkdir build
   cd build
   cmake \
   -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
   -G "$GENERATOR_"
@@ -125,6 +126,7 @@ mkdir buildOmp
   cd buildOmp
   cmake \
   -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
   -G "$GENERATOR_"
@@ -156,6 +158,7 @@ mkdir build
   cd build
   cmake \
   -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
   -G "$GENERATOR_"
@@ -174,6 +177,7 @@ mkdir buildOmp
   cd buildOmp
   cmake \
   -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
   -G "$GENERATOR_"
@@ -203,6 +207,7 @@ mkdir build
   cd build
   cmake \
   -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
   -G "$GENERATOR_"
@@ -221,6 +226,7 @@ mkdir buildOmp
   cd buildOmp
   cmake \
   -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
   -G "$GENERATOR_"
@@ -297,6 +303,7 @@ mkdir build
   cd build
   cmake \
   -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
   -G "$GENERATOR_"
@@ -315,6 +322,7 @@ mkdir buildOmp
   cd buildOmp
   cmake \
   -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
   -G "$GENERATOR_"
@@ -332,7 +340,7 @@ printf " done\n\n\n"
 
 cd ../..
 
-# # ---------------------------------------------------------
+# ---------------------------------------------------------
 printf "##################################################\n"
 printf "Executing 6/7: NPB_CG... \n"
 printf "##################################################\n"
@@ -391,6 +399,7 @@ mkdir build
   cd build
   cmake \
   -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
   -G "$GENERATOR_"
@@ -409,6 +418,7 @@ mkdir buildOmp
   cd buildOmp
   cmake \
   -DCMAKE_C_COMPILER=${CC:-cc} \
+  -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
   -H. ../ \
   -G "$GENERATOR_"
