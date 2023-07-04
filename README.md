@@ -19,9 +19,7 @@ The following real-world code is used:
 
 Just follow these simple steps on your computer:
 * First, clone this repository as usual.
-* Second, run `pwreport --configuration-wizard` and set the desired target compiler.
-from the list of the supported compilers by Codee.
-* Third, run the `benchmark-single-core-optimizations.sh` script to measure
+* Second, run the `benchmark-single-core-optimizations.sh` script to measure
 performance gain using single-core optimizations.
   * The script support multiple setups using environment variables:
     * Use `$CC` to set the desired compiler
@@ -53,8 +51,7 @@ real-world code are used:
 
 Just follow these simple steps on your computer:
 * First, clone this repository as usual.
-* Second, run `pwreport --configuration-wizard` and set the desired target compiler.
-* Third, run the 6-step script [`benchmark-mbedTLS-vector.sh`](benchmark-mbedTLS-vector.sh),
+* Second, run the 6-step script [`benchmark-mbedTLS-vector.sh`](benchmark-mbedTLS-vector.sh),
 to measure the performance gain using OpenMP vectorization on your CPU.
   * The script support multiple setups using environment variables:
     * Use `$CC` to set the desired compiler
@@ -68,7 +65,7 @@ to measure the performance gain using OpenMP vectorization on your CPU.
   required to download MbedTLS for the first time).
   * A valid Codee license and package is required. Please,
   [`contact us at codee.com`](https://www.codee.com/contact-us/).
-* Fourth, take a look at the information displayed in the screen, as the script
+* Third, take a look at the information displayed in the screen, as the script
 invokes Codee to get an screening report of the project, uses Codee’s “auto”
 mode to annotate the source code with compiler pragmas and verifies the
 correctness and speedup of the auto-generated optimized code.
@@ -111,8 +108,7 @@ an n x n 2D plane.
 
 Just follow these simple steps on your computer:
 * First, clone this repository as usual.
-* Second, run `pwreport --configuration-wizard` and set the desired target compiler.
-* Third, run the `benchmark-omp-multi.sh` script to measure performance gain
+* Second, run the `benchmark-omp-multi.sh` script to measure performance gain
 using OpenMP multi-threading on your CPU.
   * The script support multiple setups using environment variables:
     * Use `$CC` to set the desired compiler
