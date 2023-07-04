@@ -23,7 +23,7 @@ Just follow these simple steps on your computer:
 performance gain using single-core optimizations.
   * The script support multiple setups using environment variables:
     * Use `$CC` to set the desired compiler
-    * Use `$CODEE_FLAGS` if you need extra codee flags (i.e:--force-target-compiler)
+    * Use `$CODEE_FLAGS` if you need extra codee flags (i.e:--brief)
     * Use `$RUNS_WARMUP` to set the number of warm up runs for each project (default to 0)
     * Use `$RUNS` to set the number of effective runs for each project (default to 2)
   * To run the script, it is necessary to have this software installed in the system:
@@ -55,7 +55,7 @@ Just follow these simple steps on your computer:
 to measure the performance gain using OpenMP vectorization on your CPU.
   * The script support multiple setups using environment variables:
     * Use `$CC` to set the desired compiler
-    * Use `$CODEE_FLAGS` if you need extra codee flags (i.e:--force-target-compiler)
+    * Use `$CODEE_FLAGS` if you need extra codee flags (i.e:--brief)
     * Use `$RUNS_WARMUP` to set the number of warm up runs for each algorithm (default to 0)
     * Use `$RUNS` to set the number of effective runs for each project (default to 2)
   * To run the script, it is necessary to have this software installed in the system:
@@ -112,7 +112,7 @@ Just follow these simple steps on your computer:
 using OpenMP multi-threading on your CPU.
   * The script support multiple setups using environment variables:
     * Use `$CC` to set the desired compiler
-    * Use `$CODEE_FLAGS` if you need extra codee flags (i.e:--force-target-compiler)
+    * Use `$CODEE_FLAGS` if you need extra codee flags (i.e:--brief)
     * Use `$RUNS_WARMUP` to set the number of warm up runs for each project (default to 0)
     * Use `$RUNS` to set the number of effective runs for each project (default to 2)
   * To run the script, it is necessary to have this software installed in the
