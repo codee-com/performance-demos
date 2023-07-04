@@ -67,8 +67,6 @@ fi
 if command -v ${CC:-cc} &> /dev/null; then
   ${CC:-cc} --version
   CODEE_FLAGS="$CODEE_FLAGS --target-compiler-cc ${CC:-cc}"
-else
-  CODEE_FLAGS="$CODEE_FLAGS --no-target-compilers"
 fi
 printf "\n"
 
