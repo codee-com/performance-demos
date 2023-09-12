@@ -155,26 +155,26 @@ printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 tBuild2=$(date +%s%3N)
 
-printRunComm "pwdirectives --auto --vector omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_xts --brief $CODEE_FLAGS"
+printRunComm "pwdirectives --vector omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_xts --brief $CODEE_FLAGS"
 
 printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "aes_cbc algorithm\n"
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 
-printRunComm "pwdirectives --auto --vector omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_cbc --brief $CODEE_FLAGS"
+printRunComm "pwdirectives --vector omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_cbc --brief $CODEE_FLAGS"
 
 
 printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "cmac algorithm\n"
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 
-printRunComm "pwdirectives --auto --vector omp --in-place --config build/compile_commands.json library/cmac.c:cmac_xor_block --brief $CODEE_FLAGS"
+printRunComm "pwdirectives --vector omp --in-place --config build/compile_commands.json library/cmac.c:cmac_xor_block --brief $CODEE_FLAGS"
 
 printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "cbc algorithm\n"
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 
-printRunComm "pwdirectives --auto --vector omp --in-place --config build/compile_commands.json library/aria.c:mbedtls_aria_crypt_cbc --brief $CODEE_FLAGS"
+printRunComm "pwdirectives --vector omp --in-place --config build/compile_commands.json library/aria.c:mbedtls_aria_crypt_cbc --brief $CODEE_FLAGS"
 
 tBuild3=$(date +%s%3N)
 
