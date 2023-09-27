@@ -3,11 +3,11 @@
 # gathering runtimes and printing a table with the corresponding speedups.
 # Either gcc, clang or icc can be used to build; it can chosen through the CC variable.
 
-function printRunComm(){
-    ## Print the command
-    printf "\n$ $@\n"
-    ## Run the command
-    $@
+function printRunComm() {
+  ## Print the command
+  printf "\n$ $@\n"
+  ## Run the command
+  $@
 }
 
 # Variables configuration
@@ -22,45 +22,50 @@ fi
 
 # This function runs $RUNS_WARMUP warm up runs and $RUNS effective runs of the given command ($1)
 # Returns the average time of the effective runs
-function multipleRuns(){
-    local sum=0
-    local aux=""
-    local avg=0
-    for (( i=1; i<=$RUNS_WARMUP; i++ )); do
-        $(eval $1)
-    done
-    for (( i=1; i<=$RUNS; i++ )); do
-        aux="$(eval $1)"
-        sum="$(bc -l <<< "$sum + $aux")"
-    done
-    avg=$(bc -l <<< "$sum / $RUNS")
-    echo "$avg"
+function multipleRuns() {
+  local sum=0
+  local aux=""
+  local avg=0
+  for ((i = 1; i <= $RUNS_WARMUP; i++)); do
+    $(eval $1)
+  done
+  for ((i = 1; i <= $RUNS; i++)); do
+    aux="$(eval $1)"
+    sum="$(bc -l <<<"$sum + $aux")"
+  done
+  avg=$(bc -l <<<"$sum / $RUNS")
+  echo "$avg"
 }
 
 # Check that all required commands are available
 for cmd in ${CC:-cc} cmake exec printf grep cut tr bc pwdirectives unzip sed; do
-    command -v $cmd >/dev/null 2>&1 || { printf >&2 "$cmd is required but it's not installed. Aborting.\n"; exit 1; }
+  command -v $cmd >/dev/null 2>&1 || {
+    printf >&2 "$cmd is required but it's not installed. Aborting.\n"
+    exit 1
+  }
 done
 
-if command -v ninja --version >/dev/null 2>/dev/null ; then
-    GENERATOR_="Ninja"
-    CALL_GENERATOR="ninja -v"
-else if command -v make --version >/dev/null 2>/dev/null ; then
-        GENERATOR_="Unix Makefiles"
-        CALL_GENERATOR="make VERBOSE=true"
-    else
-        printf "Ninja or Makefile is required but it's not installed. Aborting.\n"; exit 1;
-    fi
+if command -v ninja --version >/dev/null 2>/dev/null; then
+  GENERATOR_="Ninja"
+  CALL_GENERATOR="ninja -v"
+else
+  if command -v make --version >/dev/null 2>/dev/null; then
+    GENERATOR_="Unix Makefiles"
+    CALL_GENERATOR="make VERBOSE=true"
+  else
+    printf "Ninja or Makefile is required but it's not installed. Aborting.\n"
+    exit 1
+  fi
 fi
 
 # Set locate for decimal point separator and disable stderr output to filter out compiler warnings
 export LC_NUMERIC="en_US.UTF-8"
-exec 2> /dev/null
+exec 2>/dev/null
 
 # Print CPU information if the command is available
 if command -v lscpu >/dev/null 2>&1; then
-    lscpu
-    printf "\n"
+  lscpu
+  printf "\n"
 fi
 
 # Print compiler information
@@ -104,11 +109,11 @@ mkdir build
 (
   cd build
   cmake \
-  -DCMAKE_C_COMPILER=${CC:-cc} \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-  -H. ../ \
-  -G "$GENERATOR_"
+    -DCMAKE_C_COMPILER=${CC:-cc} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -H. ../ \
+    -G "$GENERATOR_"
 
   $CALL_GENERATOR
 )
@@ -125,11 +130,11 @@ mkdir buildOmp
 (
   cd buildOmp
   cmake \
-  -DCMAKE_C_COMPILER=${CC:-cc} \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-  -H. ../ \
-  -G "$GENERATOR_"
+    -DCMAKE_C_COMPILER=${CC:-cc} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -H. ../ \
+    -G "$GENERATOR_"
 
   $CALL_GENERATOR
 )
@@ -157,11 +162,11 @@ mkdir build
 (
   cd build
   cmake \
-  -DCMAKE_C_COMPILER=${CC:-cc} \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-  -H. ../ \
-  -G "$GENERATOR_"
+    -DCMAKE_C_COMPILER=${CC:-cc} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -H. ../ \
+    -G "$GENERATOR_"
 
   $CALL_GENERATOR
 )
@@ -176,11 +181,11 @@ mkdir buildOmp
 (
   cd buildOmp
   cmake \
-  -DCMAKE_C_COMPILER=${CC:-cc} \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-  -H. ../ \
-  -G "$GENERATOR_"
+    -DCMAKE_C_COMPILER=${CC:-cc} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -H. ../ \
+    -G "$GENERATOR_"
 
   $CALL_GENERATOR
 )
@@ -206,11 +211,11 @@ mkdir build
 (
   cd build
   cmake \
-  -DCMAKE_C_COMPILER=${CC:-cc} \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-  -H. ../ \
-  -G "$GENERATOR_"
+    -DCMAKE_C_COMPILER=${CC:-cc} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -H. ../ \
+    -G "$GENERATOR_"
 
   $CALL_GENERATOR
 )
@@ -225,11 +230,11 @@ mkdir buildOmp
 (
   cd buildOmp
   cmake \
-  -DCMAKE_C_COMPILER=${CC:-cc} \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-  -H. ../ \
-  -G "$GENERATOR_"
+    -DCMAKE_C_COMPILER=${CC:-cc} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -H. ../ \
+    -G "$GENERATOR_"
 
   $CALL_GENERATOR
 )
@@ -255,10 +260,10 @@ mkdir build
 (
   cd build
   cmake \
-  -DCMAKE_C_COMPILER=${CC:-cc} \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-  -H. ../ \
-  -G "$GENERATOR_"
+    -DCMAKE_C_COMPILER=${CC:-cc} \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -H. ../ \
+    -G "$GENERATOR_"
 
   $CALL_GENERATOR
 )
@@ -273,10 +278,10 @@ mkdir buildOmp
 (
   cd buildOmp
   cmake \
-  -DCMAKE_C_COMPILER=${CC:-cc} \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-  -H. ../ \
-  -G "$GENERATOR_"
+    -DCMAKE_C_COMPILER=${CC:-cc} \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -H. ../ \
+    -G "$GENERATOR_"
 
   $CALL_GENERATOR
 )
@@ -302,11 +307,11 @@ mkdir build
 (
   cd build
   cmake \
-  -DCMAKE_C_COMPILER=${CC:-cc} \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-  -H. ../ \
-  -G "$GENERATOR_"
+    -DCMAKE_C_COMPILER=${CC:-cc} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -H. ../ \
+    -G "$GENERATOR_"
 
   $CALL_GENERATOR
 )
@@ -321,11 +326,11 @@ mkdir buildOmp
 (
   cd buildOmp
   cmake \
-  -DCMAKE_C_COMPILER=${CC:-cc} \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-  -H. ../ \
-  -G "$GENERATOR_"
+    -DCMAKE_C_COMPILER=${CC:-cc} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -H. ../ \
+    -G "$GENERATOR_"
 
   $CALL_GENERATOR
 )
@@ -351,10 +356,10 @@ mkdir build
 (
   cd build
   cmake \
-  -DCMAKE_C_COMPILER=${CC:-cc} \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-  -H. ../ \
-  -G "$GENERATOR_"
+    -DCMAKE_C_COMPILER=${CC:-cc} \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -H. ../ \
+    -G "$GENERATOR_"
 
   $CALL_GENERATOR
 )
@@ -369,10 +374,10 @@ mkdir buildOmp
 (
   cd buildOmp
   cmake \
-  -DCMAKE_C_COMPILER=${CC:-cc} \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-  -H. ../ \
-  -G "$GENERATOR_"
+    -DCMAKE_C_COMPILER=${CC:-cc} \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -H. ../ \
+    -G "$GENERATOR_"
 
   $CALL_GENERATOR
 )
@@ -398,11 +403,11 @@ mkdir build
 (
   cd build
   cmake \
-  -DCMAKE_C_COMPILER=${CC:-cc} \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-  -H. ../ \
-  -G "$GENERATOR_"
+    -DCMAKE_C_COMPILER=${CC:-cc} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -H. ../ \
+    -G "$GENERATOR_"
 
   $CALL_GENERATOR
 )
@@ -417,11 +422,11 @@ mkdir buildOmp
 (
   cd buildOmp
   cmake \
-  -DCMAKE_C_COMPILER=${CC:-cc} \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-  -H. ../ \
-  -G "$GENERATOR_"
+    -DCMAKE_C_COMPILER=${CC:-cc} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -H. ../ \
+    -G "$GENERATOR_"
 
   $CALL_GENERATOR
 )
@@ -448,10 +453,10 @@ printf "\nCode           \tOriginal \tOptimized  \tSpeedup\n"
 printf "===============\t========\t=========\t==============\n"
 
 printRow() { # Params: Code, Serial, Multi
-    local SPEEDUP=$(bc -l <<< "$2/$3")
-    local REDUCTION=$(bc -l <<< "($2-$3)/$2*100")
-    local EXTRA_TAB="" && (( ${#1} < 8 )) && EXTRA_TAB="\t"
-    LC_NUMERIC="en_US.UTF-8" printf "%s\t$EXTRA_TAB%.2f\t$EXTRA_TAB%.2f\t$EXTRA_TAB%.2f%% (%.2fx)\n" $1 $2 $3 $REDUCTION $SPEEDUP
+  local SPEEDUP=$(bc -l <<<"$2/$3")
+  local REDUCTION=$(bc -l <<<"($2-$3)/$2*100")
+  local EXTRA_TAB="" && ((${#1} < 8)) && EXTRA_TAB="\t"
+  LC_NUMERIC="en_US.UTF-8" printf "%s\t$EXTRA_TAB%.2f\t$EXTRA_TAB%.2f\t$EXTRA_TAB%.2f%% (%.2fx)\n" $1 $2 $3 $REDUCTION $SPEEDUP
 }
 
 printRow "ATMUX" $ATMUX_SERIAL $ATMUX_OMP_MULTI
