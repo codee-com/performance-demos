@@ -4,6 +4,7 @@
 # Either gcc, clang or icc can be used to build; it can chosen through the CC variable.
 
 function printRunComm() {
+  set -e # Force to exit if the command fails
   ## Print the command
   printf "\n$ $@\n"
   ## Run the command
@@ -23,6 +24,7 @@ fi
 # This function runs $RUNS_WARMUP warm up runs and $RUNS effective runs of the given command ($1)
 # Returns the average time of the effective runs
 function multipleRuns() {
+  set -e # Force to exit if the command fails
   local sum=0
   local aux=""
   local avg=0
@@ -47,11 +49,11 @@ done
 
 if command -v ninja --version >/dev/null 2>/dev/null; then
   GENERATOR_="Ninja"
-  CALL_GENERATOR="ninja -v"
+  CALL_GENERATOR="ninja"
 else
   if command -v make --version >/dev/null 2>/dev/null; then
     GENERATOR_="Unix Makefiles"
-    CALL_GENERATOR="make VERBOSE=true"
+    CALL_GENERATOR="make -j 2"
   else
     printf "Ninja or Makefile is required but it's not installed. Aborting.\n"
     exit 1
@@ -98,18 +100,14 @@ printRunComm "pwreport --checks main.c:matmul \
 
 printf "\nStep 2: Compiling serial code\n"
 if command -v ${CC:-cc} &>/dev/null; then
-  mkdir build
-  (
-    cd build
-    cmake \
-      -DCMAKE_C_COMPILER=${CC:-cc} \
-      -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-      -DCMAKE_BUILD_TYPE=Release \
-      -H. ../ \
-      -G "$GENERATOR_"
+  cmake . \
+    -DCMAKE_C_COMPILER=${CC:-cc} \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -DCMAKE_BUILD_TYPE=Release \
+    -B build \
+    -G "$GENERATOR_"
 
-    $CALL_GENERATOR
-  )
+  $CALL_GENERATOR -C build
 else
   printf "Skpipped. Compiler not found.\n"
 fi
@@ -121,18 +119,14 @@ printRunComm "pwdirectives --memory loop-interchange main.c:16:9 \
 
 printf "\nStep 4: Compiling optimized code\n"
 if command -v ${CC:-cc} &>/dev/null; then
-  mkdir buildInt
-  (
-    cd buildInt
-    cmake \
-      -DCMAKE_C_COMPILER=${CC:-cc} \
-      -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-      -DCMAKE_BUILD_TYPE=Release \
-      -H. ../ \
-      -G "$GENERATOR_"
+  cmake . \
+    -DCMAKE_C_COMPILER=${CC:-cc} \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -DCMAKE_BUILD_TYPE=Release \
+    -B buildInt \
+    -G "$GENERATOR_"
 
-    $CALL_GENERATOR
-  )
+  $CALL_GENERATOR -C buildInt
 else
   printf "Skpipped. Compiler not found.\n"
 fi

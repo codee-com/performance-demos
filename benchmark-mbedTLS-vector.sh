@@ -4,6 +4,7 @@
 # Either gcc, clang or icc can be used to build; it can chosen through the CC variable.
 
 function printRunComm() {
+    set -e # Force to exit if the command fails
     ## Print the command
     printf "\n$ $@\n"
     ## Run the command
@@ -24,7 +25,7 @@ if command -v ninja --version >/dev/null 2>/dev/null; then
 else
     if command -v make --version >/dev/null 2>/dev/null; then
         GENERATOR_="Unix Makefiles"
-        CALL_GENERATOR="make"
+        CALL_GENERATOR="make -j 2"
     else
         printf "Ninja or Makefile is required but it's not installed. Aborting.\n"
         exit 1
@@ -41,7 +42,7 @@ else
     : # this is not a git repository
     printf "Invalid git directory.\n"
     printf "Please, clone directly the repository from https://github.com/teamappentra/performance-demos.git \n"
-    exit
+    exit 1
 fi
 
 # Print CPU information if the command is available
@@ -113,22 +114,17 @@ printf "##################################################\n"
 
 tBuild0=$(date +%s%3N)
 
-# Support for old cmake versions
-mkdir build
-(
-    cd build
-    cmake \
-        -DENABLE_TESTING=On \
-        -DCMAKE_C_COMPILER=${CC:-cc} \
-        -DUSE_SHARED_MBEDTLS_LIBRARY=On \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-        -DMBEDTLS_FATAL_WARNINGS=Off \
-        -H. ../ \
-        -G "$GENERATOR_"
+cmake . \
+    -DENABLE_TESTING=On \
+    -DCMAKE_C_COMPILER=${CC:-cc} \
+    -DUSE_SHARED_MBEDTLS_LIBRARY=On \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -DMBEDTLS_FATAL_WARNINGS=Off \
+    -B build \
+    -G "$GENERATOR_"
 
-    $CALL_GENERATOR
-)
+$CALL_GENERATOR -C build
 
 tBuild1=$(date +%s%3N)
 
@@ -190,23 +186,18 @@ printf "\n"
 
 tBuild4=$(date +%s%3N)
 
-# Support for old cmake versions
-mkdir buildVec
-(
-    cd buildVec
-    cmake \
-        -DENABLE_TESTING=On \
-        -DCMAKE_C_COMPILER=${CC:-cc} \
-        -DUSE_SHARED_MBEDTLS_LIBRARY=On \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
-        -DCMAKE_C_FLAGS="$EXTRA_FLAGS" \
-        -DMBEDTLS_FATAL_WARNINGS=Off \
-        -H. ../ \
-        -G "$GENERATOR_"
+cmake . \
+    -DENABLE_TESTING=On \
+    -DCMAKE_C_COMPILER=${CC:-cc} \
+    -DUSE_SHARED_MBEDTLS_LIBRARY=On \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+    -DCMAKE_C_FLAGS="$EXTRA_FLAGS" \
+    -DMBEDTLS_FATAL_WARNINGS=Off \
+    -B buildVec \
+    -G "$GENERATOR_"
 
-    $CALL_GENERATOR
-)
+$CALL_GENERATOR -C buildVec
 
 tBuild5=$(date +%s%3N)
 
