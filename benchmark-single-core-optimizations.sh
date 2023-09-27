@@ -73,7 +73,6 @@ fi
 # Print compiler information
 if command -v ${CC:-cc} &>/dev/null; then
   ${CC:-cc} --version
-  CODEE_FLAGS="$CODEE_FLAGS --target-compiler-cc ${CC:-cc}"
 fi
 printf "\n"
 

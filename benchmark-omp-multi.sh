@@ -246,7 +246,7 @@ $CALL_GENERATOR -C build
 printf "\nStep 2: Optimizing code with multithreading\n"
 
 printRunComm "pwdirectives --multi omp-for --config pw.json main.c:132:7 \
- --target-compiler-cc ${CC:-cc} -i --brief $CODEE_FLAGS"
+  -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
 cmake . \
