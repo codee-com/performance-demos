@@ -58,6 +58,7 @@ to measure the performance gain using OpenMP vectorization on your CPU.
     * Use `$CODEE_FLAGS` if you need extra codee flags (i.e:--brief)
     * Use `$RUNS_WARMUP` to set the number of warm up runs for each algorithm (default to 0)
     * Use `$RUNS` to set the number of effective runs for each project (default to 2)
+    * Use `$CONTINUOS_` to skip the requirement for user interaction from the script.
   * To run the script, it is necessary to have this software installed in the system:
   compilers `gcc`, `clang` or `icc/icx` to build OpenMP SIMD, `git`, `cmake`,
   `ninja` or `makefile`, `printf` to run and benchmark the example codes.

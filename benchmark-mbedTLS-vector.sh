@@ -85,7 +85,9 @@ printf "  4. Build the vectorized version\n"
 printf "  5. Verify the correctness\n"
 printf "  6. Verify the speedup\n"
 
-read -p "Press enter to start"
+if [ -z "$CONTINUOS_" ]; then
+    read -p "Press enter to start"
+fi
 
 printf "\n"
 printf "##################################################\n"
@@ -133,7 +135,9 @@ printf "\nStep 1 done.\n"
 printf "##################################################\n"
 printf "2/6. Generating the Codee's Screening Report for the whole suite ...\n"
 printf "##################################################\n"
-read -p "Press enter to continue"
+if [ -z "$CONTINUOS_" ]; then
+    read -p "Press enter to continue"
+fi
 printf "\n"
 
 tScreening0=$(date +%s%3N)
@@ -145,7 +149,9 @@ printf "\nStep 2 done.\n"
 printf "##################################################\n"
 printf "3/6. Vectorizing the code with Codee's pwdirectives tool ...\n"
 printf "##################################################\n"
-read -p "Press enter to continue"
+if [ -z "$CONTINUOS_" ]; then
+    read -p "Press enter to continue"
+fi
 printf "\n"
 
 printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
@@ -181,7 +187,9 @@ printf "\nStep 3 done.\n"
 printf "##################################################\n"
 printf "4/6. Building the vectorized version ...\n"
 printf "##################################################\n"
-read -p "Press enter to continue"
+if [ -z "$CONTINUOS_" ]; then
+    read -p "Press enter to continue"
+fi
 printf "\n"
 
 tBuild4=$(date +%s%3N)
@@ -206,7 +214,9 @@ printf "\nStep 4 done.\n"
 printf "##################################################\n"
 printf "5/6. Verifying the correctness ...\n"
 printf "##################################################\n"
-read -p "Press enter to continue"
+if [ -z "$CONTINUOS_" ]; then
+    read -p "Press enter to continue"
+fi
 printf "\n"
 
 tBuild6=$(date +%s%3N)
@@ -252,7 +262,9 @@ printf "\nStep 5 done.\n"
 printf "##################################################\n"
 printf "6/6. Verifying the speedup ...\n"
 printf "##################################################\n"
-read -p "Press enter to continue"
+if [ -z "$CONTINUOS_" ]; then
+    read -p "Press enter to continue"
+fi
 printf "\n"
 
 tDeploy0=$(date +%s%3N)
