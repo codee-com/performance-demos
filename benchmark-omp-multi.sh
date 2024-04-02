@@ -40,7 +40,7 @@ function multipleRuns() {
 }
 
 # Check that all required commands are available
-for cmd in ${CC:-cc} cmake exec printf grep cut tr bc pwdirectives unzip sed; do
+for cmd in ${CC:-cc} cmake exec printf grep cut tr bc codee unzip sed; do
   command -v $cmd >/dev/null 2>&1 || {
     printf >&2 "$cmd is required but it's not installed. Aborting.\n"
     exit 1
@@ -119,7 +119,7 @@ $CALL_GENERATOR -C build
 
 printf "\nStep 2: Optimizing code with multithreading\n"
 
-printRunComm "pwdirectives --multi omp-for --explicit-privatization y atmux.c:22:5 \
+printRunComm "codee --rewrite --multi omp-for --explicit-privatization y atmux.c:22:5 \
  --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 sed -i 's/\/\* y start \*\//0/g' "atmux.c"
 sed -i 's/\/\* y length \*\//n/g' "atmux.c"
@@ -164,7 +164,7 @@ $CALL_GENERATOR -C build
 
 printf "\nStep 2: Optimizing code with multithreading\n"
 
-printRunComm "pwdirectives --multi omp-for canny.c:474:4,492:4 \
+printRunComm "codee --rewrite --multi omp-for canny.c:474:4,492:4 \
  --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
@@ -205,7 +205,7 @@ $CALL_GENERATOR -C build
 
 printf "\nStep 2: Optimizing code with multithreading\n"
 
-printRunComm "pwdirectives --multi omp-for coulomb.c:26:2 \
+printRunComm "codee --rewrite --multi omp-for coulomb.c:26:2 \
  --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
@@ -245,7 +245,7 @@ $CALL_GENERATOR -C build
 
 printf "\nStep 2: Optimizing code with multithreading\n"
 
-printRunComm "pwdirectives --multi omp-for --config pw.json main.c:132:7 \
+printRunComm "codee --rewrite --multi omp-for --config pw.json main.c:132:7 \
   -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
@@ -285,7 +285,7 @@ $CALL_GENERATOR -C build
 
 printf "\nStep 2: Optimizing code with multithreading\n"
 
-printRunComm "pwdirectives --multi omp-for main.c:15:5 \
+printRunComm "codee --rewrite --multi omp-for main.c:15:5 \
  --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
@@ -325,7 +325,7 @@ $CALL_GENERATOR -C build
 
 printf "\nStep 2: Optimizing code with multithreading\n"
 
-printRunComm "pwdirectives --multi omp-for CG/cg.c:458:5 \
+printRunComm "codee --rewrite --multi omp-for CG/cg.c:458:5 \
   --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
@@ -365,7 +365,7 @@ $CALL_GENERATOR -C build
 
 printf "\nStep 2: Optimizing code with multithreading\n"
 
-printRunComm "pwdirectives --multi omp-for pi.c:31:5 \
+printRunComm "codee --rewrite --multi omp-for pi.c:31:5 \
  --config build/compile_commands.json -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"

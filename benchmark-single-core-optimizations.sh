@@ -40,7 +40,7 @@ function multipleRuns() {
 }
 
 # Check that all required commands are available
-for cmd in cmake exec printf grep cut tr bc pwdirectives unzip sed; do
+for cmd in cmake exec printf grep cut tr bc codee unzip sed; do
   command -v $cmd >/dev/null 2>&1 || {
     printf >&2 "$cmd is required but it's not installed. Aborting.\n"
     exit 1
@@ -94,7 +94,7 @@ cd MATMUL/serial
 
 printf "\nStep 1: Geting Codee checkers report\n"
 
-printRunComm "pwreport --checks main.c:matmul \
+printRunComm "codee --checks main.c:matmul \
  --brief $CODEE_FLAGS -- -I include/"
 
 printf "\nStep 2: Compiling serial code\n"
@@ -113,7 +113,7 @@ fi
 
 printf "\nStep 3: Optimizing code using loop interchange\n"
 
-printRunComm "pwdirectives --memory loop-interchange main.c:16:9 \
+printRunComm "codee --rewrite --memory loop-interchange main.c:16:9 \
  -i --brief $CODEE_FLAGS -- -I include/"
 
 printf "\nStep 4: Compiling optimized code\n"
