@@ -12,7 +12,7 @@ function printRunComm() {
 }
 
 # Check that all required commands are available
-for cmd in git cmake printf pwreport pwdirectives bc; do
+for cmd in git cmake printf codee bc; do
     command -v $cmd >/dev/null 2>&1 || {
         printf >&2 "$cmd is required but it's not installed. Aborting.\n"
         exit 1
@@ -80,7 +80,7 @@ printf "##################################################\n"
 printf "Seven steps:\n"
 printf "  1. Build original MBbedTLS code\n"
 printf "  2. Codee's screening report for the whole suite\n"
-printf "  3. Vectorize the code with Codee's pwdirectives tool\n"
+printf "  3. Vectorize the code with Codee\n"
 printf "  4. Build the vectorized version\n"
 printf "  5. Verify the correctness\n"
 printf "  6. Verify the speedup\n"
@@ -141,13 +141,13 @@ fi
 printf "\n"
 
 tScreening0=$(date +%s%3N)
-printRunComm "pwreport --screening --config build/compile_commands.json --show-progress $CODEE_FLAGS"
+printRunComm "codee screening --config build/compile_commands.json $CODEE_FLAGS"
 tScreening1=$(date +%s%3N)
 
 #===============================================================================
 printf "\nStep 2 done.\n"
 printf "##################################################\n"
-printf "3/6. Vectorizing the code with Codee's pwdirectives tool ...\n"
+printf "3/6. Vectorizing the code with Codee ...\n"
 printf "##################################################\n"
 if [ -z "$CONTINUOS_" ]; then
     read -p "Press enter to continue"
@@ -160,25 +160,25 @@ printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 tBuild2=$(date +%s%3N)
 
-printRunComm "pwdirectives --vector omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_xts --brief $CODEE_FLAGS"
+printRunComm "codee rewrite --vector omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_xts --brief $CODEE_FLAGS"
 
 printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "aes_cbc algorithm\n"
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 
-printRunComm "pwdirectives --vector omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_cbc --brief $CODEE_FLAGS"
+printRunComm "codee rewrite --vector omp --in-place --config build/compile_commands.json library/aes.c:mbedtls_aes_crypt_cbc --brief $CODEE_FLAGS"
 
 printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "cmac algorithm\n"
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 
-printRunComm "pwdirectives --vector omp --in-place --config build/compile_commands.json library/cmac.c:cmac_xor_block --brief $CODEE_FLAGS"
+printRunComm "codee rewrite --vector omp --in-place --config build/compile_commands.json library/cmac.c:cmac_xor_block --brief $CODEE_FLAGS"
 
 printf "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 printf "cbc algorithm\n"
 printf "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
 
-printRunComm "pwdirectives --vector omp --in-place --config build/compile_commands.json library/aria.c:mbedtls_aria_crypt_cbc --brief $CODEE_FLAGS"
+printRunComm "codee rewrite --vector omp --in-place --config build/compile_commands.json library/aria.c:mbedtls_aria_crypt_cbc --brief $CODEE_FLAGS"
 
 tBuild3=$(date +%s%3N)
 
@@ -368,7 +368,7 @@ tDeployC=$(bc -l <<<"(($tDeploy2 - $tDeploy1)/($RUNS+$RUNS_WARMUP)) /1000")
 printf "\nStep               \tWithout Codee\t\tWith Codee\n"
 printf "=====================\t=============\t\t==========\n"
 printf "CI: SS: Clone        \t%.3f s \t\t%.3f s\n" $tSource $tSource
-printf "CI: BS: pwdirectives \t----- s \t\t%.3f s\n" $tCodee
+printf "CI: BS: codee rewrite\t----- s \t\t%.3f s\n" $tCodee
 printf "CI: BS: make all     \t%.3f s \t\t%.3f s\n" $tBuildO $tBuildC
 printf "CI: BS: Test aes/cmac\t%.3f s \t\t%.3f s\n" $tTestO $tTestC
 printf "CI: DS: Benchmark    \t%.3f s \t\t%.3f s\n" $tDeployO $tDeployC
