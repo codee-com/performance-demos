@@ -1,0 +1,8 @@
+[
+{
+  "directory": "build",
+  "command": "/usr/bin/cc -g -fopenmp -O3 -mavx2 -Wall -lm ../mysecond.c ../Step10_orig.c ../main.c -o main",
+  "file": "../main.c",
+  "output": "main"
+}
+]

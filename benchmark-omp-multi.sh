@@ -245,7 +245,7 @@ $CALL_GENERATOR -C build
 
 printf "\nStep 2: Optimizing code with multithreading\n"
 
-printRunComm "codee rewrite --multi omp-for --config pw.json main.c:132:7 \
+printRunComm "codee rewrite --multi omp-for --config compile_commands.json main.c:132:7 \
   -i --brief $CODEE_FLAGS"
 
 printf "\nStep 3: Compiling optimized code\n"
